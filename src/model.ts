@@ -44,9 +44,8 @@ class SignificantLocation {
         const lon1 = this.longitude;
         const lat1 = this.latitude;
         const lon2 = coord.getLongitude();
-        const lat2 = coord.getLongitude();
+        const lat2 = coord.getLatitude();
 
-        const planetRadiusKM = planetRadius / 1000;
         const phi1 = lat1 * DEG_TO_RAD;
         const phi2 = lat2 * DEG_TO_RAD;
 
@@ -56,8 +55,7 @@ class SignificantLocation {
         const a = Math.pow(Math.sin(dPhi / 2), 2) + Math.cos(phi1) * Math.cos(phi2) * Math.pow(Math.sin(dLambda / 2), 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        // Answer in meters but our convention is in km.
-        return (planetRadius * c) / 1000;
+        return planetRadius * c;
     }
 }
 
