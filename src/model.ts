@@ -59,24 +59,50 @@ class SignificantLocation {
     }
 }
 
+/**
+Possible difficulty toggles:
+
+- planet radius. The larger the planet, obviously the harder the game is.
+     - Or else the allowed hit radius should be adjusted.
+- distance computer failure rate. The more accurate readings you get, the better
+  you can decide your next attempts.
+*/
 class ExcurzoneGame {
     private currentPlayerLocation: SignificantLocation;
     private goal: SignificantLocation;
+    private planetCircumference: number;
+
     constructor(
         private significantLocations: SignificantLocation[],
-        private planetRadius: number = EARTH_RADIUS
+        private planetRadius: number = EARTH_RADIUS,
+        private distFailureRate: number = 0.5 // TODO Ensure it is always in [0, 1]
     ){
         this.currentPlayerLocation = randomChoice(this.significantLocations);
         this.goal = randomChoice(this.significantLocations);
+        this.planetCircumference = this.planetRadius * 2 * Math.PI;
 
         while(this.currentPlayerLocation.isEqualTo(this.goal)) {
             this.goal = randomChoice(this.significantLocations);
         }
     }
+
+    public setCurrentPlayerLocation(sl: SignificantLocation): void {
+        this.currentPlayerLocation = sl;
+    }
+
+    /**
+    Compute the player's current distance from the goal. This already represents
+    part of the game mechanic where the player's distance computer is 
+    malfunctioning and we either get a minor arc or the major arc of our
+    distance from goal.
+    */
+    public computeDistanceFromGoal(): number {
+        const havDist = this.currentPlayerLocation.haversineDistance(this.goal, this.planetRadius);
+
+        if (Math.random() <= this.distFailureRate) {
+            return this.planetCircumference - havDist;
+        } else {
+            return havDist;
+        }
+    }
 }
-
-const sa = new SignificantLocation("a", -0.116773, 51.510357);
-const sb = new SignificantLocation("b", -77.009003, 38.889931);
-
-console.log(sa.haversineDistance(sb, EARTH_RADIUS));
-console.log(sb.haversineDistance(sa, EARTH_RADIUS));
