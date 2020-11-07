@@ -16,3 +16,7 @@ body {
     border: 1px solid #fff;
     height: 25%;
 }
+
+h1.title {
+    font-family: 'Press Start 2P', cursive;
+}
