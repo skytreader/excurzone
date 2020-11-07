@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import {SignificantLocation, ExcurzoneGame} from './model';
 
+const PARENT_ID = "excurzone-target";
+
 function gid(id: string): HTMLElement | null {
     return document.getElementById(id);
 }
@@ -14,6 +16,7 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
         type: Phaser.AUTO,
         width: 1024,
         height: 768,
+        parent: PARENT_ID,
         physics: {
             default: "arcade",
             arcade: {
@@ -40,12 +43,14 @@ class ExcurzoneMain extends Phaser.Scene {
 
 export const game: Phaser.Game;
 
+// HAHAHA LOL ROFL
+window.onresize = (event) => {
+    const parent: HTMLElement | null = gid(PARENT_ID);
+    game.scale.resize(parent.offsetWidth - 2, parent.offsetHeight - 2);
+});
+
 window.onload = (event) => {
     const scenesConfig = {"scenes": [ExcurzoneMain]};
     game = new Phaser.Game(configMaker(scenesConfig));
-    game.scale.resize(window.innerWidth, window.innerHeight);
+    window.onresize(event);
 }
-
-window.onresize = (event) => {
-    game.scale.resize(window.innerWidth, window.innerHeight);
-});
