@@ -12,7 +12,7 @@ function randomChoice(arr: any[]): any {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-class SignificantLocation {
+export class SignificantLocation {
     constructor(
         private name: string,
         private longitude: number,
@@ -67,13 +67,13 @@ Possible difficulty toggles:
 - distance computer failure rate. The more accurate readings you get, the better
   you can decide your next attempts.
 */
-class ExcurzoneGame {
+export class ExcurzoneGame {
     private currentPlayerLocation: SignificantLocation;
     private goal: SignificantLocation;
     private planetCircumference: number;
 
     constructor(
-        private significantLocations: SignificantLocation[],
+        private significantLocations: SignificantLocation[], // FIXME Should have at least 2 elements
         private planetRadius: number = EARTH_RADIUS,
         private distFailureRate: number = 0.5 // TODO Ensure it is always in [0, 1]
     ){
@@ -81,7 +81,7 @@ class ExcurzoneGame {
         this.goal = randomChoice(this.significantLocations);
         this.planetCircumference = this.planetRadius * 2 * Math.PI;
 
-        while(this.currentPlayerLocation.isEqualTo(this.goal)) {
+        while(this.currentPlayerLocation != undefined && this.currentPlayerLocation.isEqualTo(this.goal)) {
             this.goal = randomChoice(this.significantLocations);
         }
     }
