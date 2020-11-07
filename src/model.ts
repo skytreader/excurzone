@@ -51,6 +51,19 @@ export class Coordinate {
 
         return planetRadius * c;
     }
+
+    /*
+    Thanks https://stackoverflow.com/a/1185413/777225 with modifications for the
+    projection I want.
+    */
+    public cartesianProjection(planetRadius: number): number[] {
+        const latRad = this.latitude * DEG_TO_RAD;
+        const lonRad = this.longitude * DEG_TO_RAD;
+        const x = planetRadius * Math.cos(latRad) * Math.cos(lonRad);
+        // This is actually the z-axis from the answer
+        const z = planetRadius * Math.sin(latRad);
+        return [x, z];
+    }
 }
 
 export class SignificantLocation {
@@ -155,7 +168,7 @@ export class ExcurzoneGame {
     private isRadarFixed: boolean;
 
     constructor(
-        private bases: SignificantLocation[], // FIXME Should have at least 2 elements
+        private bases: SignificantLocation[],
         private planetRadius: number = EARTH_RADIUS,
         private distFailureRate: number = 0.5 // TODO Ensure it is always in [0, 1]
     ){
@@ -165,8 +178,16 @@ export class ExcurzoneGame {
         this.isRadarFixed = false;
     }
 
+    public getCurrentPlayerLocation(): Coordinate {
+        return this.currentPlayerLocation;
+    }
+
     public setCurrentPlayerLocation(coord: Coordinate): void {
         this.currentPlayerLocation = coord;
+    }
+
+    public getPlanetRadius(): number {
+        return this.planetRadius;
     }
 
     /**

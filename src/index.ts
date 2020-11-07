@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import {SignificantLocation, ExcurzoneGame} from './model';
+import LinearExkurCounterdefense from './livemodel';
 
 const PARENT_ID = "excurzone-target";
 
@@ -55,7 +56,20 @@ class ExcurzoneMain extends Phaser.Scene {
         );
     }
 
+    private computeScaledPlayerLocation(): number[] {
+        const playerCartesian: number[] = this.gameModel.getCurrentPlayerLocation().cartesianProjection(this.gameModel.getPlanetRadius());
+        // Remember we are scaling from the origin
+        const xScaleFactor = this.cameras.main.centerX / this.gameModel.getPlanetRadius();
+        const yScaleFactor = this.cameras.main.centerY / this.gameModel.getPlanetRadius();
+        
+        // Don't forget to translate since 0,0 for computers is the upper left corner
+        const xPlayerScale = playerCartesian[0] * xScaleFactor + this.cameras.main.centerX;
+        const yPlayerScale = playerCartesian[1] * yScaleFactor + this.cameras.main.centerY;
+        return [xPlayerScale, yPlayerScale];
+    }
+
     private create(): void {
+        // The map
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
         this.add.grid(
             this.cameras.main.centerX,
@@ -70,6 +84,18 @@ class ExcurzoneMain extends Phaser.Scene {
             undefined
         );
 
+        // The map overlays
+        const playerCartesian: number[] = this.computeScaledPlayerLocation();
+        console.log("player cartesian", playerCartesian);
+        const playerCircle = this.add.circle(
+            playerCartesian[0],
+            playerCartesian[1],
+            4,
+            0x538b0c,
+            undefined
+        );
+
+        // The player controls/spaceship interface.
         this.createInterfaceRect();
     }
 
