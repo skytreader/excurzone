@@ -49,9 +49,9 @@ class ExcurzoneMain extends Phaser.Scene {
             this.cameras.main.displayHeight,
             100,
             100,
-            0x0000ff,
+            0x383838,
             undefined,
-            0x00ff00,
+            0x384438,
             undefined
         );
     }
