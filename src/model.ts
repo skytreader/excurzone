@@ -8,20 +8,15 @@ Units:
 const EARTH_RADIUS: number = 6378;
 const DEG_TO_RAD: number = 0.0174;
 
-function randomChoice(arr: any[]): any {
-    return arr[Math.floor(Math.random() * arr.length)];
+function randRange(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
 }
 
-export class SignificantLocation {
-    private isRevealed: boolean;
+export class Coordinate {
     constructor(
         private longitude: number,
-        private latitude: number,
-        private correctsRadar: boolean,
-        private counterAttacks: boolean
-    ){
-        this.isRevealed = false;
-    }
+        private latitude: number
+    ){}
 
     public getLongitude(): number {
         return this.longitude;
@@ -29,6 +24,47 @@ export class SignificantLocation {
 
     public getLatitude(): number {
         return this.latitude;
+    }
+
+    public isEqualTo(otherCoord: Coordinate): boolean {
+        return Math.abs(this.longitude - otherCoord.getLongitude()) <= 0.0001 &&
+               Math.abs(this.latitude - otherCoord.getLatitude()) <= 0.0001;
+    }
+
+    /*
+    Thanks http://www.ggspatial.co.uk/distance-on-a-sphere-the-haversine-formula/
+    */
+    public haversineDistance(coord: Coordinate, planetRadius: number): number {
+        const lon1 = this.longitude;
+        const lat1 = this.latitude;
+        const lon2 = coord.getLongitude();
+        const lat2 = coord.getLatitude();
+
+        const phi1 = lat1 * DEG_TO_RAD;
+        const phi2 = lat2 * DEG_TO_RAD;
+
+        const dPhi = phi2 - phi1;
+        const dLambda = (lon2 - lon1) * DEG_TO_RAD;
+
+        const a = Math.pow(Math.sin(dPhi / 2), 2) + Math.cos(phi1) * Math.cos(phi2) * Math.pow(Math.sin(dLambda / 2), 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return planetRadius * c;
+    }
+}
+
+export class SignificantLocation {
+    private isRevealed: boolean;
+    constructor(
+        private location: Coordinate,
+        private correctsRadar: boolean,
+        private counterAttacks: boolean
+    ){
+        this.isRevealed = false;
+    }
+
+    public getLocation() {
+        return this.location;
     }
 
     public getCorrectsRadar(): boolean {
@@ -48,29 +84,59 @@ export class SignificantLocation {
     }
 
     public isEqualTo(otherSL: SignificantLocation): boolean {
-        return Math.abs(this.longitude - otherSL.getLongitude()) <= 0.0001 &&
-               Math.abs(this.latitude - otherSL.getLatitude()) <= 0.0001;
+        return this.location.isEqualTo(otherSL.getLocation()) &&
+               (this.correctsRadar && otherSL.getCorrectsRadar()) &&
+               (this.counterAttacks && otherSL.getCounterAttacks()) &&
+               (this.isRevealed && otherSL.getIsRevealed());
+    }
+}
+
+class CoordinateGenerator {
+    private precisionFactor: number;
+    private scaleFactor: number;
+    constructor(
+        p: number
+    ){
+        this.precisionFactor = Math.pow(10, p);
+        this.scaleFactor = Math.pow(10, p - 1);
     }
 
-    /*
-    Thanks http://www.ggspatial.co.uk/distance-on-a-sphere-the-haversine-formula/
-    */
-    public haversineDistance(coord: SignificantLocation, planetRadius: number): number {
-        const lon1 = this.longitude;
-        const lat1 = this.latitude;
-        const lon2 = coord.getLongitude();
-        const lat2 = coord.getLatitude();
+    private randomCoordinate(): number {
+        return randRange(-180 * this.precisionFactor, 180 * this.precisionFactor) / this.scaleFactor;
+    }
 
-        const phi1 = lat1 * DEG_TO_RAD;
-        const phi2 = lat2 * DEG_TO_RAD;
+    private randomLongitude(): number {
+        return this.randomCoordinate();
+    }
+    
+    private randomLatitude(): number {
+        return this.randomCoordinate() / 2;
+    }
 
-        const dPhi = phi2 - phi1;
-        const dLambda = (lon2 - lon1) * DEG_TO_RAD;
+    public generateCoordinate(): Coordinate {
+        return new Coordinate(this.randomLongitude(), this.randomLatitude());
+    }
+}
 
-        const a = Math.pow(Math.sin(dPhi / 2), 2) + Math.cos(phi1) * Math.cos(phi2) * Math.pow(Math.sin(dLambda / 2), 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+class SignificantLocationGenerator {
+    private coordinateGenerator: CoordinateGenerator;
+    constructor(
+        private radarCorrectorRate: number,
+        private counterAttackerRate: number
+    ){
+        this.coordinateGenerator = new CoordinateGenerator(7);
+    }
 
-        return planetRadius * c;
+    public generateSignificantLocations(count: number): SignificantLocation[] {
+        const locs: SignificantLocation[] = [];
+        for (var i = 0; i < count; i++){
+            locs.push(new SignificantLocation(
+                this.coordinateGenerator.generateCoordinate(),
+                Math.random() <= this.radarCorrectorRate,
+                Math.random() <= this.counterAttackerRate
+            ));
+        }
+        return locs;
     }
 }
 
@@ -83,41 +149,48 @@ Possible difficulty toggles:
   you can decide your next attempts.
 */
 export class ExcurzoneGame {
-    private currentPlayerLocation: SignificantLocation;
-    private goal: SignificantLocation;
+    private currentPlayerLocation: Coordinate;
     private planetCircumference: number;
+    
+    private isRadarFixed: boolean;
 
     constructor(
-        private significantLocations: SignificantLocation[], // FIXME Should have at least 2 elements
+        private bases: SignificantLocation[], // FIXME Should have at least 2 elements
         private planetRadius: number = EARTH_RADIUS,
         private distFailureRate: number = 0.5 // TODO Ensure it is always in [0, 1]
     ){
-        this.currentPlayerLocation = randomChoice(this.significantLocations);
-        this.goal = randomChoice(this.significantLocations);
+        const theFate: CoordinateGenerator = new CoordinateGenerator(7);
+        this.currentPlayerLocation = theFate.generateCoordinate();
         this.planetCircumference = this.planetRadius * 2 * Math.PI;
-
-        while(this.currentPlayerLocation != undefined && this.currentPlayerLocation.isEqualTo(this.goal)) {
-            this.goal = randomChoice(this.significantLocations);
-        }
+        this.isRadarFixed = false;
     }
 
-    public setCurrentPlayerLocation(sl: SignificantLocation): void {
-        this.currentPlayerLocation = sl;
+    public setCurrentPlayerLocation(coord: Coordinate): void {
+        this.currentPlayerLocation = coord;
     }
 
     /**
-    Compute the player's current distance from the goal. This already represents
+    Compute the player's current distance from all . This already represents
     part of the game mechanic where the player's distance computer is 
     malfunctioning and we either get a minor arc or the major arc of our
-    distance from goal.
-    */
-    public computeDistanceFromGoal(): number {
-        const havDist = this.currentPlayerLocation.haversineDistance(this.goal, this.planetRadius);
+    distance from goal. Of course, radar repairs are reflected as well.
 
-        if (Math.random() <= this.distFailureRate) {
-            return this.planetCircumference - havDist;
-        } else {
-            return havDist;
+    @return A parallel array signifying distances from bases.
+    */
+    public computeDistanceFromBases(): number[] {
+        const distances: number[] = []
+        const limit: number = this.bases.length;
+
+        for (var i = 0; i < limit; i++) {
+            const havDist = this.currentPlayerLocation.haversineDistance(this.bases[i].getLocation(), this.planetRadius);
+
+            if (!this.isRadarFixed && Math.random() <= this.distFailureRate) {
+                distances.push(this.planetCircumference - havDist);
+            } else {
+                distances.push(havDist);
+            }
         }
+
+        return distances;
     }
 }
