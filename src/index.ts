@@ -65,20 +65,23 @@ class ExcurzoneMain extends Phaser.Scene {
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
     }
 
-    private update(): void {
+    public update(): void {
     }
 }
 
-export const game: Phaser.Game;
+export var game: Phaser.Game;
 
 // HAHAHA LOL ROFL
-window.onresize = (event) => {
+window.onresize = (event: Event) => {
     const parent: HTMLElement | null = gid(PARENT_ID);
-    game.scale.resize(parent.offsetWidth - 2, parent.offsetHeight - 2);
-});
+    if (parent != null) {
+        game.scale.resize(parent.offsetWidth - 2, parent.offsetHeight - 2);
+    }
+};
 
-window.onload = (event) => {
+window.onload = (event: Event) => {
     const scenesConfig = {"scene": [ExcurzoneMain]};
     game = new Phaser.Game(configMaker(scenesConfig));
+    // @ts-ignore
     window.onresize(event);
 }
