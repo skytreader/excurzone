@@ -42,18 +42,18 @@ class ExcurzoneMain extends Phaser.Scene {
     private setupGrid(colCount: number, rowCount: number, gridUpperLeftX: number, gridUpperLeftY: number): void {
         const cellWidth = Math.floor((this.cameras.main.displayWidth - (gridUpperLeftX * 2)) / colCount);
         const cellHeight = Math.floor((this.cameras.main.displayHeight - (gridUpperLeftY * 2)) / rowCount);
-        const virgin: boolean = true;
-
-        for (var row = 0; row < rowCount; row++) {
-            for (var col = 0; col < colCount; col++){
-                const rect = this.add.rectangle(col * cellWidth + gridUpperLeftX, row * cellHeight + gridUpperLeftY, cellWidth, cellHeight, 0x0000ff);
-                if (virgin) {
-                    console.log(col * cellWidth + gridUpperLeftX, row * cellHeight + gridUpperLeftY);
-                    virgin = false;
-                }
-                rect.setStrokeStyle(2, 0x00ff00);
-            }
-        }
+        this.add.grid(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            this.cameras.main.displayWidth,
+            this.cameras.main.displayHeight,
+            100,
+            100,
+            0x0000ff,
+            undefined,
+            0x00ff00,
+            undefined
+        );
     }
 
     private preload(): void {
