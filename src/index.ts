@@ -35,13 +35,16 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
 
 class ExcurzoneMain extends Phaser.Scene {
     constructor(
+        private gameModel: ExcurzoneGame
     ) {
         super(configMaker({key: "main"}));
     }
 
-    private setupGrid(colCount: number, rowCount: number, gridUpperLeftX: number, gridUpperLeftY: number): void {
-        const cellWidth = Math.floor((this.cameras.main.displayWidth - (gridUpperLeftX * 2)) / colCount);
-        const cellHeight = Math.floor((this.cameras.main.displayHeight - (gridUpperLeftY * 2)) / rowCount);
+    private preload(): void {
+        this.load.image("topography", "img/contours.png");
+    }
+
+    private create(): void {
         this.add.grid(
             this.cameras.main.centerX,
             this.cameras.main.centerY,
@@ -54,14 +57,6 @@ class ExcurzoneMain extends Phaser.Scene {
             0x384438,
             undefined
         );
-    }
-
-    private preload(): void {
-        this.load.image("topography", "img/contours.png");
-    }
-
-    private create(): void {
-        this.setupGrid(10, 4, 100, 0);
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
     }
 
@@ -80,7 +75,7 @@ window.onresize = (event: Event) => {
 };
 
 window.onload = (event: Event) => {
-    const scenesConfig = {"scene": [ExcurzoneMain]};
+    const scenesConfig = {"scene": [new ExcurzoneMain(new ExcurzoneGame([]))]};
     game = new Phaser.Game(configMaker(scenesConfig));
     // @ts-ignore
     window.onresize(event);
