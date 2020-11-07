@@ -57,16 +57,15 @@ class ExcurzoneMain extends Phaser.Scene {
     }
 
     private preload(): void {
+        this.load.image("topography", "img/contours.png");
     }
 
     private create(): void {
         this.setupGrid(10, 4, 100, 0);
-        //this.add.rectangle(100, 100, 148, 148, 0x6666ff);
-        //this.add.rectangle(0, 100, 148, 148, 0x666600);
+        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
     }
 
     private update(): void {
-        //this.setupGrid(10, 4, 100, 0);
     }
 }
 
