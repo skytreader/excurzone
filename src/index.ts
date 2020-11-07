@@ -3,12 +3,12 @@ import {SignificantLocation, ExcurzoneGame} from './model';
 
 const PARENT_ID = "excurzone-target";
 
+const CONTAINER_BG = 0x1c1c1c;
+const GRID_FILL = 0x383838;
+const GRID_LINES = 0x384438;
+
 function gid(id: string): HTMLElement | null {
     return document.getElementById(id);
-}
-
-function newNode(tag: string): HTMLElement {
-    return document.createElement(tag);
 }
 
 function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.GameConfig {
@@ -45,6 +45,7 @@ class ExcurzoneMain extends Phaser.Scene {
     }
 
     private create(): void {
+        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
         this.add.grid(
             this.cameras.main.centerX,
             this.cameras.main.centerY,
@@ -52,12 +53,11 @@ class ExcurzoneMain extends Phaser.Scene {
             this.cameras.main.displayHeight,
             100,
             100,
-            0x383838,
-            undefined,
-            0x384438,
+            GRID_FILL,
+            70,
+            GRID_LINES,
             undefined
         );
-        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
     }
 
     public update(): void {
