@@ -14,8 +14,8 @@ function newNode(tag: string): HTMLElement {
 function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.GameConfig {
     const config: Phaser.Types.Core.GameConfig = {
         type: Phaser.AUTO,
-        width: 1024,
-        height: 768,
+        width: 800,
+        height: 600,
         parent: PARENT_ID,
         physics: {
             default: "arcade",
@@ -40,24 +40,33 @@ class ExcurzoneMain extends Phaser.Scene {
     }
 
     private setupGrid(colCount: number, rowCount: number, gridUpperLeftX: number, gridUpperLeftY: number): void {
-        const cellWidth = Math.floor(this.cameras.main.width / colCount);
-        const cellHeight = Math.floor(this.cameras.main.height / rowCount);
+        const cellWidth = Math.floor((this.cameras.main.displayWidth - (gridUpperLeftX * 2)) / colCount);
+        const cellHeight = Math.floor((this.cameras.main.displayHeight - (gridUpperLeftY * 2)) / rowCount);
+        const virgin: boolean = true;
 
         for (var row = 0; row < rowCount; row++) {
             for (var col = 0; col < colCount; col++){
                 const rect = this.add.rectangle(col * cellWidth + gridUpperLeftX, row * cellHeight + gridUpperLeftY, cellWidth, cellHeight, 0x0000ff);
+                if (virgin) {
+                    console.log(col * cellWidth + gridUpperLeftX, row * cellHeight + gridUpperLeftY);
+                    virgin = false;
+                }
                 rect.setStrokeStyle(2, 0x00ff00);
             }
         }
     }
 
-    private preload(): void {}
+    private preload(): void {
+    }
 
     private create(): void {
         this.setupGrid(10, 4, 100, 0);
+        //this.add.rectangle(100, 100, 148, 148, 0x6666ff);
+        //this.add.rectangle(0, 100, 148, 148, 0x666600);
     }
 
     private update(): void {
+        //this.setupGrid(10, 4, 100, 0);
     }
 }
 
