@@ -35,9 +35,29 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
 
 class ExcurzoneMain extends Phaser.Scene {
     constructor(
-        private gameModel: ExcurzoneGame
     ) {
         super(configMaker({key: "main"}));
+    }
+
+    private setupGrid(colCount: number, rowCount: number, gridUpperLeftX: number, gridUpperLeftY: number): void {
+        const cellWidth = Math.floor(this.cameras.main.width / colCount);
+        const cellHeight = Math.floor(this.cameras.main.height / rowCount);
+
+        for (var row = 0; row < rowCount; row++) {
+            for (var col = 0; col < colCount; col++){
+                const rect = this.add.rectangle(col * cellWidth + gridUpperLeftX, row * cellHeight + gridUpperLeftY, cellWidth, cellHeight, 0x0000ff);
+                rect.setStrokeStyle(2, 0x00ff00);
+            }
+        }
+    }
+
+    private preload(): void {}
+
+    private create(): void {
+        this.setupGrid(10, 4, 100, 0);
+    }
+
+    private update(): void {
     }
 }
 
@@ -50,7 +70,7 @@ window.onresize = (event) => {
 });
 
 window.onload = (event) => {
-    const scenesConfig = {"scenes": [ExcurzoneMain]};
+    const scenesConfig = {"scene": [ExcurzoneMain]};
     game = new Phaser.Game(configMaker(scenesConfig));
     window.onresize(event);
 }
