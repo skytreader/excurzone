@@ -13,14 +13,14 @@ function randomChoice(arr: any[]): any {
 }
 
 export class SignificantLocation {
+    private isRevealed: boolean;
     constructor(
-        private name: string,
         private longitude: number,
-        private latitude: number
-    ){}
-
-    public getName(): string {
-        return this.name;
+        private latitude: number,
+        private correctsRadar: boolean,
+        private counterAttacks: boolean
+    ){
+        this.isRevealed = false;
     }
 
     public getLongitude(): number {
@@ -31,9 +31,24 @@ export class SignificantLocation {
         return this.latitude;
     }
 
+    public getCorrectsRadar(): boolean {
+        return this.correctsRadar;
+    }
+
+    public getCounterAttacks(): boolean {
+        return this.counterAttacks;
+    }
+
+    public getIsRevealed(): boolean {
+        return this.isRevealed;
+    }
+
+    public setIsRevealed(isRevealed: boolean): void {
+        this.isRevealed = isRevealed;
+    }
+
     public isEqualTo(otherSL: SignificantLocation): boolean {
-        return this.name == otherSL.name &&
-               Math.abs(this.longitude - otherSL.getLongitude()) <= 0.0001 &&
+        return Math.abs(this.longitude - otherSL.getLongitude()) <= 0.0001 &&
                Math.abs(this.latitude - otherSL.getLatitude()) <= 0.0001;
     }
 

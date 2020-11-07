@@ -44,6 +44,17 @@ class ExcurzoneMain extends Phaser.Scene {
         this.load.image("topography", "img/contours.png");
     }
 
+    private createInterfaceRect(): void {
+        this.add.rectangle(
+            Math.floor(this.cameras.main.displayWidth * 0.08),
+            this.cameras.main.centerY,
+            Math.floor(this.cameras.main.displayWidth * 0.15),
+            this.cameras.main.displayHeight - 100,
+            CONTAINER_BG,
+            60
+        );
+    }
+
     private create(): void {
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
         this.add.grid(
@@ -58,6 +69,8 @@ class ExcurzoneMain extends Phaser.Scene {
             GRID_LINES,
             undefined
         );
+
+        this.createInterfaceRect();
     }
 
     public update(): void {
