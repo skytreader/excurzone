@@ -75,18 +75,6 @@ class ExcurzoneMain extends Phaser.Scene {
     protected writeText(): void {
     }
 
-    private computeScaledPlayerLocation(): number[] {
-        const playerCartesian: number[] = this.gameModel.getCurrentPlayerLocation().cartesianProjection(this.gameModel.getPlanetRadius());
-        // Remember we are scaling from the origin
-        const xScaleFactor = this.cameras.main.centerX / this.gameModel.getPlanetRadius();
-        const yScaleFactor = this.cameras.main.centerY / this.gameModel.getPlanetRadius();
-        
-        // Don't forget to translate since 0,0 for computers is the upper left corner
-        const xPlayerScale = playerCartesian[0] * xScaleFactor + this.cameras.main.centerX;
-        const yPlayerScale = playerCartesian[1] * yScaleFactor + this.cameras.main.centerY;
-        return [xPlayerScale, yPlayerScale];
-    }
-
     protected coordsToGameCartesian(c: Coordinate): number[] {
         const coordCartesian: number[] = c.cartesianProjection(this.gameModel.getPlanetRadius());
         // Remember we are scaling from the origin
@@ -101,7 +89,7 @@ class ExcurzoneMain extends Phaser.Scene {
     }
 
     private addPlayerKurzor(): void {
-        const playerCartesian: number[] = this.computeScaledPlayerLocation();
+        const playerCartesian: number[] = this.coordsToGameCartesian(this.gameModel.getCurrentPlayerLocation());
         const playerRadius: number = 4;
         const pulseCirRadius: number = playerRadius * 30;
         const pulseCir = this.add.circle(
@@ -271,41 +259,33 @@ class BaseChoosing extends ExcurzoneMain {
         );
         let runningHeight = instructions.height + 108;
         const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
-        const isVirgin: boolean = this.baseChoices.length == 0;
-        for (var i = 0; i < this.gameModel.getBaseCount() || isVirgin; i++){
-            // SUPER HACK
-            if (i >= this.gameModel.getBaseCount()) {
-                break;
-            }
-            if (isVirgin) {
-                const base: SignificantLocation = this.gameModel.getBase(i);
-                console.log(this.baseChoices);
-                this.baseChoices[i] = this.add.text(
-                    xAlign,
-                    runningHeight + 13,
-                    "ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km",
-                    {
-                        fontSize: 20,
-                        color: this.gameModel.getBase(i).getIsRevealed() ? COOLNESS : "#fff",
-                        fontStyle: (this.currentDestination == i) ? "bold" : ""
-                    }
+        for (var i = 0; i < this.gameModel.getBaseCount(); i++){
+            const base: SignificantLocation = this.gameModel.getBase(i);
+            console.log(this.baseChoices);
+            this.baseChoices[i] = this.add.text(
+                xAlign,
+                runningHeight + 13,
+                "ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km",
+                {
+                    fontSize: 20,
+                    color: this.gameModel.getBase(i).getIsRevealed() ? COOLNESS : "#fff",
+                    fontStyle: (this.currentDestination == i) ? "bold" : ""
+                }
+            );
+            this.baseChoices[i].setInteractive(new Phaser.Geom.Rectangle(
+                0, 0, this.baseChoices[i].width, this.baseChoices[i].height,
+            ), Phaser.Geom.Rectangle.Contains);
+            console.log("set click for", i);
+            const index = i;
+            this.baseChoices[i].on("pointerdown", (pointer: any) => {
+                this.currentDestination = index;
+                this.probeInTransit = true;
+                this.time.delayedCall(
+                    Math.floor(baseDistances[index]), () => {this.setPlayerLoc(index)}, [], this
                 );
-                this.baseChoices[i].setInteractive(new Phaser.Geom.Rectangle(
-                    0, 0, this.baseChoices[i].width, this.baseChoices[i].height,
-                ), Phaser.Geom.Rectangle.Contains);
-                console.log("set click for", i);
-                const index = i;
-                this.baseChoices[i].on("pointerdown", (pointer: any) => {
-                    this.currentDestination = index;
-                    this.probeInTransit = true;
-                    this.time.delayedCall(
-                        Math.floor(baseDistances[index]), () => {this.setPlayerLoc(index)}, [], this
-                    );
-                    console.log(this);
-                });
-                runningHeight += this.baseChoices[i].height;
-            } else if (this.currentDestination >= 0 && !this.probeInTransit) {
-            }
+                console.log(this);
+            });
+            runningHeight += this.baseChoices[i].height;
         }
     }
 
@@ -405,7 +385,6 @@ class BaseChoosing extends ExcurzoneMain {
                     this.flashWarning();
                 }
             }
-            this.writeText();
             this.addRadarStatus();
             this.addTravelStatus();
         }
