@@ -87,14 +87,15 @@ class ExcurzoneMain extends Phaser.Scene {
     private addPlayerKurzor(): void {
         const playerCartesian: number[] = this.computeScaledPlayerLocation();
         const playerRadius: number = 4;
-        const pulseCirRadius: number = playerRadius * 100;
+        const pulseCirRadius: number = playerRadius * 30;
         const pulseCir = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
             pulseCirRadius,
             0x53c50c,
-            0.2
+            0
         );
+        pulseCir.setStrokeStyle(2, 0x53c50c);
         const playerCircle = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
@@ -111,7 +112,7 @@ class ExcurzoneMain extends Phaser.Scene {
             yoyo: false,
             repeat: -1,
             duration: pulseTravelTime,
-            hold: pulseTravelTime,
+            hold: pulseTravelTime / 2,
             ease: 'Sine.easeInOut'
         });
     }
