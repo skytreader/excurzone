@@ -45,10 +45,12 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
 }
 
 class ExcurzoneMain extends Phaser.Scene {
+    private playerInterfaceVisible: boolean;
     constructor(
         private gameModel: ExcurzoneGame
     ) {
         super(configMaker({key: "main"}));
+        this.playerInterfaceVisible = true;
     }
 
     private preload(): void {
@@ -65,6 +67,10 @@ class ExcurzoneMain extends Phaser.Scene {
             CONTAINER_BG,
             60
         );
+    }
+
+    private writeText(): void {
+        const rectYOffset = 100;
         this.add.text(
             this.cameras.main.centerX / 2,
             rectYOffset + 8,
@@ -117,8 +123,7 @@ class ExcurzoneMain extends Phaser.Scene {
         });
     }
 
-    private create(): void {
-        // The map
+    private addMap(): void {
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
         this.add.grid(
             this.cameras.main.centerX,
@@ -132,12 +137,22 @@ class ExcurzoneMain extends Phaser.Scene {
             GRID_LINES,
             undefined
         );
+    }
+
+    private addBasicUIElements(): void {
+        // The map
+        this.addMap();
 
         // The map overlays
         this.addPlayerKurzor();
 
         // The player controls/spaceship interface.
         this.createInterfaceRect();
+    }
+
+    private create(): void {
+        this.addBasicUIElements();
+        this.writeText();
     }
 
     public update(): void {

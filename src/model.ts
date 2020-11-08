@@ -194,6 +194,10 @@ export class ExcurzoneGame {
         this.bases[i].setIsRevealed(isVisible);
     }
 
+    public getBase(index: number): SignificantLocation {
+        return this.bases[i];
+    }
+
     /**
     Compute the player's current distance from all . This already represents
     part of the game mechanic where the player's distance computer is 
