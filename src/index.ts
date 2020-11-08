@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import {SignificantLocation, ExcurzoneGame} from './model';
-import {LinearExkurCounterdefense} from './livemodels';
+import {ExkurCounterdefense, LinearExkurCounterdefense} from './livemodels';
 
 const PARENT_ID = "excurzone-target";
 
 const CONTAINER_BG = 0x1c1c1c;
 const GRID_FILL = 0x383838;
 const GRID_LINES = 0x384438;
+const FARBE_DER_DRINGLICHKEIT = 0xff0000;
 
 const INITIAL_INSTRUCTIONS: string = `
 You have arrived at your assignment: a planet held captive by the evil Exkur
@@ -175,7 +176,7 @@ class Intro extends ExcurzoneMain {
 
     private init(data: any): void {
         this.gameModel = new ExcurzoneGame([]);
-        this.time.pause = true;
+        // TODO Maybe set time.paused here?
     }
 
     protected create(): void {
@@ -208,8 +209,15 @@ class BaseChoosing extends ExcurzoneMain {
 
     // Hack because I can't get the timer to stay still in the intro
     private timeOffset: number = 0;
+    private counterdefense: ExkurCounterdefense;
+
+    private lastCounterdefenseCheck: number = 0;
+
+    static COUNTERDEFENSE_PERIOD: number = 13000;
+
     constructor(){
         super(configMaker({key: "choosing"}));
+        this.counterdefense = new LinearExkurCounterdefense();
     }
 
     public init(data: any): void {
@@ -220,11 +228,15 @@ class BaseChoosing extends ExcurzoneMain {
         console.log("In BaseChoosing", this.time.now, this.timeOffset);
     }
 
+    private getTimeInScene(): number {
+        return this.time.now - this.timeOffset;
+    }
+
     private createTimerLabel(): string {
         if (this.timeOffset == 0){
             this.timeOffset = this.time.now;
         }
-        return "MISSION TIME: " + Math.floor((this.time.now - this.timeOffset) / 1000) + "cyc|ESF"
+        return "MISSION TIME: " + Math.floor(this.getTimeInScene() / 1000) + "cyc|ESF"
     }
 
     private addTimer(): void {
@@ -242,13 +254,61 @@ class BaseChoosing extends ExcurzoneMain {
     }
 
     protected create(): void {
-        console.log("BaseChoosing create");
         super.create();
         this.addTimer();
     }
     
     public update(): void {
         this.timeText.setText(this.createTimerLabel());
+        if ((this.getTimeInScene() - this.lastCounterdefenseCheck) > BaseChoosing.COUNTERDEFENSE_PERIOD) {
+            const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
+            this.lastCounterdefenseCheck = this.getTimeInScene();
+
+            if (cdfCheck){
+                // GAME OVER
+                console.log("GAME OVER!");
+            } else {
+                this.flashWarning();
+            }
+        }
+    }
+
+    private flashWarning(): void {
+        const achtung = this.add.rectangle(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            this.cameras.main.displayWidth,
+            this.cameras.main.displayHeight,
+            FARBE_DER_DRINGLICHKEIT,
+            undefined
+        );
+        this.tweens.add({
+            targets: achtung,
+            alpha: 0,
+            yoyo: false,
+            repeat: 3,
+            duration: Math.floor(2000 / 3),
+            hold: 500,
+            ease: "Sine.easeInOut"
+        });
+        const warnText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.displayHeight * 0.9,
+            "ACHTUNG! EXKUR COUNTERDEFENSE IS ON TO US!",
+            {
+                fontSize: 36,
+                color: "#0f0",
+                fontStyle: "bold"
+            }
+        );
+        this.tweens.add({
+            targets: warnText,
+            alpha: 0,
+            yoyo: false,
+            repeat: 0,
+            duration: 4000,
+            ease: "Sine.easeInOut"
+        });
     }
 }
 
