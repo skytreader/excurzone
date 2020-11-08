@@ -261,18 +261,20 @@ class BaseChoosing extends ExcurzoneMain {
     }
     
     public update(): void {
-        this.timeText.setText(this.createTimerLabel());
-        // FIXME This would benefit from a proper timer.
-        if ((this.getTimeInScene() - this.lastCounterdefenseCheck) > BaseChoosing.COUNTERDEFENSE_PERIOD) {
-            const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
-            this.lastCounterdefenseCheck = this.getTimeInScene();
+        if (!this.isPlayerDead) {
+            this.timeText.setText(this.createTimerLabel());
+            // FIXME This would benefit from a proper timer.
+            if ((this.getTimeInScene() - this.lastCounterdefenseCheck) > BaseChoosing.COUNTERDEFENSE_PERIOD) {
+                const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
+                this.lastCounterdefenseCheck = this.getTimeInScene();
 
-            if (cdfCheck){
-                // GAME OVER
-                this.setGameOver();
-                console.log("GAME OVER!");
-            } else {
-                this.flashWarning();
+                if (cdfCheck){
+                    // GAME OVER
+                    this.setGameOver();
+                    console.log("GAME OVER!");
+                } else {
+                    this.flashWarning();
+                }
             }
         }
     }
