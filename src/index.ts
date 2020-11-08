@@ -68,6 +68,38 @@ class ExcurzoneMain extends Phaser.Scene {
         return [xPlayerScale, yPlayerScale];
     }
 
+    private addPlayerKurzor(): void {
+        const playerCartesian: number[] = this.computeScaledPlayerLocation();
+        const playerRadius: number = 4;
+        const pulseCirRadius: number = playerRadius * 100;
+        const pulseCir = this.add.circle(
+            playerCartesian[0],
+            playerCartesian[1],
+            pulseCirRadius,
+            0x53c50c,
+            0.2
+        );
+        const playerCircle = this.add.circle(
+            playerCartesian[0],
+            playerCartesian[1],
+            playerRadius,
+            0x538b0c,
+            undefined
+        );
+        // Relation to pulseCir?
+        const pulseTravelTime = 4000;
+        this.tweens.add({
+            targets: pulseCir,
+            scaleX: 0.001,
+            scaleY: 0.001,
+            yoyo: false,
+            repeat: -1,
+            duration: pulseTravelTime,
+            hold: pulseTravelTime,
+            ease: 'Sine.easeInOut'
+        });
+    }
+
     private create(): void {
         // The map
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
@@ -85,31 +117,7 @@ class ExcurzoneMain extends Phaser.Scene {
         );
 
         // The map overlays
-        const playerCartesian: number[] = this.computeScaledPlayerLocation();
-        const pulseCir = this.add.circle(
-            playerCartesian[0],
-            playerCartesian[1],
-            400,
-            0x53c50c,
-            0.36
-        );
-        const playerCircle = this.add.circle(
-            playerCartesian[0],
-            playerCartesian[1],
-            4,
-            0x538b0c,
-            undefined
-        );
-        this.tweens.add({
-            targets: pulseCir,
-            scaleX: 0.001,
-            scaleY: 0.001,
-            yoyo: false,
-            repeat: -1,
-            duration: 3000,
-            hold: 3000,
-            ease: 'Sine.easeInOut'
-        });
+        this.addPlayerKurzor();
 
         // The player controls/spaceship interface.
         this.createInterfaceRect();
