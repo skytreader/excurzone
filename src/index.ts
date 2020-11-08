@@ -8,6 +8,16 @@ const CONTAINER_BG = 0x1c1c1c;
 const GRID_FILL = 0x383838;
 const GRID_LINES = 0x384438;
 
+const INITIAL_INSTRUCTIONS: string = `
+You have arrived at your assignment: a planet held captive by the evil Exkur
+Empire. Observing from a covert location at the atmosphere, you send your
+sabotage probe to destroy military outposts and free the planet. Unfortunately,
+the rebellion's intelligence and equipment is lacking. Can you destroy all the
+bases before the The Empire's counterdefense detects your presence?
+
+CLICK TO START MISSION
+`
+
 function gid(id: string): HTMLElement | null {
     return document.getElementById(id);
 }
@@ -46,13 +56,19 @@ class ExcurzoneMain extends Phaser.Scene {
     }
 
     private createInterfaceRect(): void {
+        const rectYOffset = 100;
         this.add.rectangle(
-            Math.floor(this.cameras.main.displayWidth * 0.08),
+            this.cameras.main.centerX,
             this.cameras.main.centerY,
-            Math.floor(this.cameras.main.displayWidth * 0.15),
-            this.cameras.main.displayHeight - 100,
+            Math.floor(this.cameras.main.displayWidth * 0.8),
+            this.cameras.main.displayHeight - rectYOffset,
             CONTAINER_BG,
             60
+        );
+        this.add.text(
+            this.cameras.main.centerX / 2,
+            rectYOffset + 8,
+            INITIAL_INSTRUCTIONS
         );
     }
 
