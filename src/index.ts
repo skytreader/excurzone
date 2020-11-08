@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import {SignificantLocation, ExcurzoneGame} from './model';
-import LinearExkurCounterdefense from './livemodel';
+import {LinearExkurCounterdefense} from './livemodels';
 
 const PARENT_ID = "excurzone-target";
 

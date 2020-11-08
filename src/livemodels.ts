@@ -6,7 +6,7 @@ interface ExkurCounterdefense {
     hasCaught(gameTime: number): boolean;
 }
 
-export class LinearExkurCounterdefense extends ExkurCounterdefense {
+export class LinearExkurCounterdefense implements ExkurCounterdefense {
     constructor(
         private slope: number = 0.01
     ){}
