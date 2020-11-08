@@ -184,7 +184,7 @@ class Intro extends ExcurzoneMain {
     private init(data: any): void {
         const slGenerator = new SignificantLocationGenerator(0.4, 0.3);
         this.gameModel = new ExcurzoneGame(slGenerator.generateSignificantLocations(10));
-        // TODO Maybe set time.paused here?
+        this.time.paused = true;
     }
 
     protected create(): void {
@@ -206,12 +206,11 @@ class Intro extends ExcurzoneMain {
     }
 
     private rectClick(pointer: any): void {
-        this.scene.start("choosing", {gameModel: this.gameModel, uiState: this.gameUIState});
+        this.scene.start("maingame", {gameModel: this.gameModel, uiState: this.gameUIState});
     }
 }
 
-// What a horrible class name
-class BaseChoosing extends ExcurzoneMain {
+class MainGame extends ExcurzoneMain {
     // @ts-ignore FIXME initialization
     private timedEvent: Phaser.Time.Clock;
     // @ts-ignore FIXME initialization
@@ -234,7 +233,7 @@ class BaseChoosing extends ExcurzoneMain {
     static COUNTERDEFENSE_PERIOD: number = 13000;
 
     constructor(){
-        super(configMaker({key: "choosing"}));
+        super(configMaker({key: "maingame"}));
         this.counterdefense = new LinearExkurCounterdefense();
     }
 
@@ -244,6 +243,7 @@ class BaseChoosing extends ExcurzoneMain {
         this.gameUIState.playerInterfaceVisible = false;
         this.gameUIState.isInterfaceRectClickable = false;
         console.log("In BaseChoosing", this.time.now, this.timeOffset);
+        this.time.paused = false;
     }
 
     private getTimeInScene(): number {
@@ -259,7 +259,7 @@ class BaseChoosing extends ExcurzoneMain {
         );
         let runningHeight = instructions.height + 108;
         const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
-        for (var i = 0; i < this.gameModel.getBaseCount(); i++){
+        for (var i = 0; i < this.gameModel.getBaseCount(); i++) {
             const base: SignificantLocation = this.gameModel.getBase(i);
             console.log(this.baseChoices);
             this.baseChoices[i] = this.add.text(
@@ -303,7 +303,6 @@ class BaseChoosing extends ExcurzoneMain {
             COOLNESS,
             0
         );
-        console.log("player loc set");
     }
 
     private createTimerLabel(): string {
@@ -373,7 +372,7 @@ class BaseChoosing extends ExcurzoneMain {
         if (!this.isPlayerDead) {
             this.timeText.setText(this.createTimerLabel());
             // FIXME This would benefit from a proper timer.
-            if ((this.getTimeInScene() - this.lastCounterdefenseCheck) > BaseChoosing.COUNTERDEFENSE_PERIOD) {
+            if ((this.getTimeInScene() - this.lastCounterdefenseCheck) > MainGame.COUNTERDEFENSE_PERIOD) {
                 const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
                 this.lastCounterdefenseCheck = this.getTimeInScene();
 
@@ -454,7 +453,7 @@ window.onresize = (event: Event) => {
 };
 
 window.onload = (event: Event) => {
-    const scenesConfig = {"scene": [Intro, BaseChoosing]};
+    const scenesConfig = {"scene": [Intro, MainGame]};
     game = new Phaser.Game(configMaker(scenesConfig));
     // @ts-ignore
     window.onresize(event);
