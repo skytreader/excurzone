@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import {SignificantLocation, SignificantLocationGenerator, ExcurzoneGame} from './model';
+import {Coordinate, SignificantLocation, SignificantLocationGenerator, ExcurzoneGame} from './model';
 import {ExkurCounterdefense, LinearExkurCounterdefense} from './livemodels';
 
 const PARENT_ID = "excurzone-target";
@@ -86,6 +86,19 @@ class ExcurzoneMain extends Phaser.Scene {
         const xPlayerScale = playerCartesian[0] * xScaleFactor + this.cameras.main.centerX;
         const yPlayerScale = playerCartesian[1] * yScaleFactor + this.cameras.main.centerY;
         return [xPlayerScale, yPlayerScale];
+    }
+
+    protected coordsToGameCartesian(c: Coordinate): number[] {
+        const coordCartesian: number[] = c.cartesianProjection(this.gameModel.getPlanetRadius());
+        // Remember we are scaling from the origin
+        const xScaleFactor = this.cameras.main.centerX / this.gameModel.getPlanetRadius();
+        const yScaleFactor = this.cameras.main.centerY / this.gameModel.getPlanetRadius();
+        
+        // Don't forget to translate since 0,0 for computers is the upper left corner
+        const xScale = coordCartesian[0] * xScaleFactor + this.cameras.main.centerX;
+        const yScale = coordCartesian[1] * yScaleFactor + this.cameras.main.centerY;
+        return [xScale, yScale];
+
     }
 
     private addPlayerKurzor(): void {
@@ -218,9 +231,12 @@ class BaseChoosing extends ExcurzoneMain {
     private timeText: Phaser.GameObjects.Text;
     // @ts-ignore FIXME initialization
     private radarStatus: Phaser.GameObjects.Text;
+    // @ts-ignore FIXME initialization
+    private travelStatus: Phaser.GameObjects.Text;
     private currentDestination: number = -1;
     // @ts-ignore FIXME initialization
     private baseChoices: Phaser.GameObjects.Text[] = [];
+    private probeInTransit: boolean = false;
 
     // Hack because I can't get the timer to stay still in the intro
     private timeOffset: number = 0;
@@ -257,32 +273,59 @@ class BaseChoosing extends ExcurzoneMain {
         let runningHeight = instructions.height + 108;
         const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
         const isVirgin: boolean = this.baseChoices.length == 0;
-        for (var i = 0; i < this.gameModel.getBaseCount() && isVirgin; i++){
+        for (var i = 0; i < this.gameModel.getBaseCount() || isVirgin; i++){
+            // SUPER HACK
+            if (i >= this.gameModel.getBaseCount()) {
+                break;
+            }
             if (isVirgin) {
                 const base: SignificantLocation = this.gameModel.getBase(i);
-                //console.log(base);
+                console.log(this.baseChoices);
                 this.baseChoices[i] = this.add.text(
                     xAlign,
                     runningHeight + 13,
                     "ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km",
                     {
                         fontSize: 20,
-                        //color: this.gameModel.getBase(i).getIsRevealed() ? COOLNESS : "#fff",
+                        color: this.gameModel.getBase(i).getIsRevealed() ? COOLNESS : "#fff",
                         fontStyle: (this.currentDestination == i) ? "bold" : ""
                     }
                 );
                 this.baseChoices[i].setInteractive(new Phaser.Geom.Rectangle(
                     0, 0, this.baseChoices[i].width, this.baseChoices[i].height,
                 ), Phaser.Geom.Rectangle.Contains);
+                console.log("set click for", i);
+                const index = i;
                 this.baseChoices[i].on("pointerdown", (pointer: any) => {
-                    this.currentDestination = i;
+                    this.currentDestination = index;
+                    this.probeInTransit = true;
+                    this.time.delayedCall(
+                        Math.floor(baseDistances[index] / 1000), () => {this.setPlayerLoc(index)}, [], this
+                    );
+                    console.log(this);
                 });
                 runningHeight += this.baseChoices[i].height;
-            } else if (this.currentDestination >= 0) {
-                this.baseChoices[i].setText("ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km");
+            } else if (this.currentDestination >= 0 && !this.probeInTransit) {
+                console.log("currentDest i", this.currentDestination, i);
+                this.baseChoices[i].setText("ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km" +((this.currentDestination == i) ? " [DEST]" : ""));
                 this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
             }
         }
+    }
+
+    private setPlayerLoc(i: number): void {
+        const base: Coordinate = this.gameModel.getBase(i).getLocation();
+        const baseCartesian: number[] = this.coordsToGameCartesian(base);
+        this.gameModel.setCurrentPlayerLocation(base);
+        this.probeInTransit = false;
+        const pulseCir = this.add.circle(
+            baseCartesian[0],
+            baseCartesian[1],
+            60,
+            COOLNESS,
+            0
+        );
+        console.log("player loc set");
     }
 
     private createTimerLabel(): string {
@@ -323,11 +366,29 @@ class BaseChoosing extends ExcurzoneMain {
         }
     }
 
+    private addTravelStatus(): void {
+        if (this.travelStatus == null){
+            this.travelStatus = this.add.text(
+                this.cameras.main.displayWidth * 0.8,
+                36 + this.timeText.height + this.radarStatus.height,
+                "PROBE: " + (this.probeInTransit ? "IN TRANSIT TO " + "ABCDEFGHIJ".charAt(this.currentDestination) : "STEADY"),
+                {
+                    fontSize: 21,
+                    color: "#598bd4",
+                    fontStyle: "bold"
+                }
+            );
+        } else {
+            this.travelStatus.setText("PROBE: " + (this.probeInTransit ? "IN TRANSIT TO " + "ABCDEFGHIJ".charAt(this.currentDestination) : "STEADY"));
+        }
+    }
+
     protected create(): void {
         super.create();
         this.addTimer();
         this.writeText();
         this.addRadarStatus();
+        this.addTravelStatus();
     }
     
     public update(): void {
@@ -348,6 +409,7 @@ class BaseChoosing extends ExcurzoneMain {
             }
             this.writeText();
             this.addRadarStatus();
+            this.addTravelStatus();
         }
     }
 
