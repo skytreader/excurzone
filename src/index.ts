@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
-import {SignificantLocation, ExcurzoneGame} from './model';
-import {LinearExkurCounterdefense} from './livemodels';
+import {Coordinate, SignificantLocation, SignificantLocationGenerator, ExcurzoneGame} from './model';
+import {ExkurCounterdefense, LinearExkurCounterdefense} from './livemodels';
 
 const PARENT_ID = "excurzone-target";
 
 const CONTAINER_BG = 0x1c1c1c;
 const GRID_FILL = 0x383838;
 const GRID_LINES = 0x384438;
+const FARBE_DER_DRINGLICHKEIT = 0xff0000;
+const COOLNESS = 0x598bd4;
 
 const INITIAL_INSTRUCTIONS: string = `
 You have arrived at your assignment: a planet held captive by the evil Exkur
@@ -16,6 +18,10 @@ the rebellion's intelligence and equipment is lacking. Can you destroy all the
 bases before the The Empire's counterdefense detects your presence?
 
 CLICK TO START MISSION
+`
+
+const BASES_INSTRUCTIONS: string = `
+These are the bases that our probe discovered. Which would you like to attack?
 `
 
 function gid(id: string): HTMLElement | null {
@@ -44,6 +50,8 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
     return config;
 }
 
+// TODO Feel like these are the same. If the interface is visible then it it
+// clickable. Kein Unterschied!
 class GameUIState {
     constructor(
         public playerInterfaceVisible: boolean,
@@ -58,40 +66,13 @@ class ExcurzoneMain extends Phaser.Scene {
     // @ts-ignore FIXME later
     protected gameModel: ExcurzoneGame;
 
+    protected isPlayerDead: boolean = false;
+
     private preload(): void {
         this.load.image("topography", "img/contours.png");
     }
 
-    private createInterfaceRect(): void {
-        const rectYOffset = 100;
-        console.log("In main is interface now visible", this.gameUIState.playerInterfaceVisible);
-        if (this.gameUIState.playerInterfaceVisible) {
-            const rect = this.add.rectangle(
-                this.cameras.main.centerX,
-                this.cameras.main.centerY,
-                Math.floor(this.cameras.main.displayWidth * 0.8),
-                this.cameras.main.displayHeight - rectYOffset,
-                CONTAINER_BG,
-                60
-            );
-            rect.setInteractive(new Phaser.Geom.Rectangle(
-                0, 0, rect.width, rect.height
-            ), Phaser.Geom.Rectangle.Contains);
-            rect.on("pointerdown", (pointer: any) => {this.rectClick(pointer)});
-        }
-    }
-
-    private rectClick(pointer: any): void {
-        this.scene.start("choosing", {gameModel: this.gameModel});
-    }
-
-    private writeText(): void {
-        const rectYOffset = 100;
-        this.add.text(
-            this.cameras.main.centerX / 2,
-            rectYOffset + 8,
-            INITIAL_INSTRUCTIONS
-        );
+    protected writeText(): void {
     }
 
     private computeScaledPlayerLocation(): number[] {
@@ -106,6 +87,19 @@ class ExcurzoneMain extends Phaser.Scene {
         return [xPlayerScale, yPlayerScale];
     }
 
+    protected coordsToGameCartesian(c: Coordinate): number[] {
+        const coordCartesian: number[] = c.cartesianProjection(this.gameModel.getPlanetRadius());
+        // Remember we are scaling from the origin
+        const xScaleFactor = this.cameras.main.centerX / this.gameModel.getPlanetRadius();
+        const yScaleFactor = this.cameras.main.centerY / this.gameModel.getPlanetRadius();
+        
+        // Don't forget to translate since 0,0 for computers is the upper left corner
+        const xScale = coordCartesian[0] * xScaleFactor + this.cameras.main.centerX;
+        const yScale = coordCartesian[1] * yScaleFactor + this.cameras.main.centerY;
+        return [xScale, yScale];
+
+    }
+
     private addPlayerKurzor(): void {
         const playerCartesian: number[] = this.computeScaledPlayerLocation();
         const playerRadius: number = 4;
@@ -114,15 +108,15 @@ class ExcurzoneMain extends Phaser.Scene {
             playerCartesian[0],
             playerCartesian[1],
             pulseCirRadius,
-            0x53c50c,
+            this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x53c50c,
             0
         );
-        pulseCir.setStrokeStyle(2, 0x53c50c);
+        pulseCir.setStrokeStyle(2, this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x53c50c);
         const playerCircle = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
             playerRadius,
-            0x538b0c,
+            this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x538b0c,
             undefined
         );
         // Relation to pulseCir?
@@ -161,17 +155,31 @@ class ExcurzoneMain extends Phaser.Scene {
 
         // The map overlays
         this.addPlayerKurzor();
+    }
 
-        // The player controls/spaceship interface.
-        this.createInterfaceRect();
+    protected createInterfaceRect(clickHandler?: Function): void {
+        const rectYOffset = 100;
+        if (this.gameUIState.playerInterfaceVisible) {
+            const rect = this.add.rectangle(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY,
+                Math.floor(this.cameras.main.displayWidth * 0.8),
+                this.cameras.main.displayHeight - rectYOffset,
+                CONTAINER_BG,
+                60
+            );
+            rect.setInteractive(new Phaser.Geom.Rectangle(
+                0, 0, rect.width, rect.height
+            ), Phaser.Geom.Rectangle.Contains);
+            if (clickHandler != null || clickHandler != undefined){
+                rect.on("pointerdown", clickHandler);
+            }
+        }
     }
 
     protected create(): void {
-        console.log("In main create");
+        console.log("In main create", this.gameUIState);
         this.addBasicUIElements();
-        if (this.gameUIState.playerInterfaceVisible) {
-            this.writeText();
-        }
     }
 
     public update(): void {
@@ -186,25 +194,273 @@ class Intro extends ExcurzoneMain {
     }
 
     private init(data: any): void {
-        this.gameModel = new ExcurzoneGame([]);
+        const slGenerator = new SignificantLocationGenerator(0.4, 0.3);
+        this.gameModel = new ExcurzoneGame(slGenerator.generateSignificantLocations(10));
+        // TODO Maybe set time.paused here?
+    }
+
+    protected create(): void {
+        super.create();
+        // The player controls/spaceship interface.
+        this.createInterfaceRect((pointer:any) => {this.rectClick(pointer)});
+        if (this.gameUIState.playerInterfaceVisible) {
+            this.writeText();
+        }
+    }
+
+    protected writeText(): void {
+        const rectYOffset = 100;
+        this.add.text(
+            this.cameras.main.centerX / 2,
+            rectYOffset + 8,
+            INITIAL_INSTRUCTIONS
+        );
+    }
+
+    private rectClick(pointer: any): void {
+        this.scene.start("choosing", {gameModel: this.gameModel, uiState: this.gameUIState});
     }
 }
 
+// What a horrible class name
 class BaseChoosing extends ExcurzoneMain {
+    // @ts-ignore FIXME initialization
+    private timedEvent: Phaser.Time.Clock;
+    // @ts-ignore FIXME initialization
+    private timeText: Phaser.GameObjects.Text;
+    // @ts-ignore FIXME initialization
+    private radarStatus: Phaser.GameObjects.Text;
+    // @ts-ignore FIXME initialization
+    private travelStatus: Phaser.GameObjects.Text;
+    private currentDestination: number = -1;
+    // @ts-ignore FIXME initialization
+    private baseChoices: Phaser.GameObjects.Text[] = [];
+    private probeInTransit: boolean = false;
+
+    // Hack because I can't get the timer to stay still in the intro
+    private timeOffset: number = 0;
+    private counterdefense: ExkurCounterdefense;
+
+    private lastCounterdefenseCheck: number = 0;
+
+    static COUNTERDEFENSE_PERIOD: number = 13000;
+
     constructor(){
         super(configMaker({key: "choosing"}));
-        this.gameUIState.playerInterfaceVisible = false;
-        this.gameUIState.isInterfaceRectClickable = false;
+        this.counterdefense = new LinearExkurCounterdefense();
     }
 
     public init(data: any): void {
         this.gameModel = data.gameModel;
-        console.log("In BaseChoosing", data.gameModel);
+        this.gameUIState = data.uiState;
+        this.gameUIState.playerInterfaceVisible = false;
+        this.gameUIState.isInterfaceRectClickable = false;
+        console.log("In BaseChoosing", this.time.now, this.timeOffset);
+    }
+
+    private getTimeInScene(): number {
+        return this.time.now - this.timeOffset;
+    }
+
+    protected writeText(): void {
+        const xAlign: number = this.cameras.main.displayWidth * 0.08;
+        const instructions = this.add.text(
+            xAlign,
+            108,
+            BASES_INSTRUCTIONS
+        );
+        let runningHeight = instructions.height + 108;
+        const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
+        const isVirgin: boolean = this.baseChoices.length == 0;
+        for (var i = 0; i < this.gameModel.getBaseCount() || isVirgin; i++){
+            // SUPER HACK
+            if (i >= this.gameModel.getBaseCount()) {
+                break;
+            }
+            if (isVirgin) {
+                const base: SignificantLocation = this.gameModel.getBase(i);
+                console.log(this.baseChoices);
+                this.baseChoices[i] = this.add.text(
+                    xAlign,
+                    runningHeight + 13,
+                    "ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km",
+                    {
+                        fontSize: 20,
+                        color: this.gameModel.getBase(i).getIsRevealed() ? COOLNESS : "#fff",
+                        fontStyle: (this.currentDestination == i) ? "bold" : ""
+                    }
+                );
+                this.baseChoices[i].setInteractive(new Phaser.Geom.Rectangle(
+                    0, 0, this.baseChoices[i].width, this.baseChoices[i].height,
+                ), Phaser.Geom.Rectangle.Contains);
+                console.log("set click for", i);
+                const index = i;
+                this.baseChoices[i].on("pointerdown", (pointer: any) => {
+                    this.currentDestination = index;
+                    this.probeInTransit = true;
+                    this.time.delayedCall(
+                        Math.floor(baseDistances[index]), () => {this.setPlayerLoc(index)}, [], this
+                    );
+                    console.log(this);
+                });
+                runningHeight += this.baseChoices[i].height;
+            } else if (this.currentDestination >= 0 && !this.probeInTransit) {
+            }
+        }
+    }
+
+    private setPlayerLoc(i: number): void {
+        const base: Coordinate = this.gameModel.getBase(i).getLocation();
+        const baseCartesian: number[] = this.coordsToGameCartesian(base);
+        this.gameModel.setCurrentPlayerLocation(base);
+        this.probeInTransit = false;
+        this.baseChoices[i].setText(this.baseChoices[i].text +((this.currentDestination == i) ? " [REACHED]" : ""));
+        this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
+        const pulseCir = this.add.circle(
+            baseCartesian[0],
+            baseCartesian[1],
+            60,
+            COOLNESS,
+            0
+        );
+        console.log("player loc set");
+    }
+
+    private createTimerLabel(): string {
+        if (this.timeOffset == 0){
+            this.timeOffset = this.time.now;
+        }
+        return "MISSION TIME: " + Math.floor(this.getTimeInScene() / 1000) + "cyc|ESF"
+    }
+
+    private addTimer(): void {
+        this.time.paused = false;
+        this.timeText = this.add.text(
+            this.cameras.main.displayWidth * 0.8,
+            36,
+            this.createTimerLabel(),
+            {
+                fontSize: 21,
+                color: "#f00",
+                fontStyle: "bold"
+            }
+        );
+    }
+
+    private addRadarStatus(): void {
+        if (this.radarStatus == null){
+            this.radarStatus = this.add.text(
+                this.cameras.main.displayWidth * 0.8,
+                36 + this.timeText.height,
+                "RADAR: " + (this.gameModel.getIsRadarFixed() ? "FIXED" : "UNRELIABLE"),
+                {
+                    fontSize: 21,
+                    color: this.gameModel.getIsRadarFixed() ? COOLNESS : "#f00",
+                    fontStyle: "bold"
+                }
+            );
+        } else {
+            this.radarStatus.setText("RADAR: " + (this.gameModel.getIsRadarFixed() ? "FIXED" : "UNRELIABLE"));
+        }
+    }
+
+    private addTravelStatus(): void {
+        if (this.travelStatus == null){
+            this.travelStatus = this.add.text(
+                this.cameras.main.displayWidth * 0.8,
+                36 + this.timeText.height + this.radarStatus.height,
+                "PROBE: " + (this.probeInTransit ? "IN TRANSIT TO " + "ABCDEFGHIJ".charAt(this.currentDestination) : "STEADY"),
+                {
+                    fontSize: 21,
+                    color: "#598bd4",
+                    fontStyle: "bold"
+                }
+            );
+        } else {
+            this.travelStatus.setText("PROBE: " + (this.probeInTransit ? "IN TRANSIT TO " + "ABCDEFGHIJ".charAt(this.currentDestination) : "STEADY"));
+        }
     }
 
     protected create(): void {
-        console.log("BaseChoosing create");
         super.create();
+        this.addTimer();
+        this.writeText();
+        this.addRadarStatus();
+        this.addTravelStatus();
+    }
+    
+    public update(): void {
+        if (!this.isPlayerDead) {
+            this.timeText.setText(this.createTimerLabel());
+            // FIXME This would benefit from a proper timer.
+            if ((this.getTimeInScene() - this.lastCounterdefenseCheck) > BaseChoosing.COUNTERDEFENSE_PERIOD) {
+                const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
+                this.lastCounterdefenseCheck = this.getTimeInScene();
+
+                if (cdfCheck){
+                    // GAME OVER
+                    this.setGameOver();
+                    console.log("GAME OVER!");
+                } else {
+                    this.flashWarning();
+                }
+            }
+            this.writeText();
+            this.addRadarStatus();
+            this.addTravelStatus();
+        }
+    }
+
+    private setGameOver(): void {
+        const warnText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.displayHeight * 0.9,
+            "THE EXKURS CAUGHT OUR PROBE",
+            {
+                fontSize: 36,
+                color: "#f00",
+                fontStyle: "bold"
+            }
+        );
+        this.isPlayerDead = true;
+    }
+
+    private flashWarning(): void {
+        const achtung = this.add.rectangle(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            this.cameras.main.displayWidth,
+            this.cameras.main.displayHeight,
+            FARBE_DER_DRINGLICHKEIT,
+            undefined
+        );
+        this.tweens.add({
+            targets: achtung,
+            alpha: 0,
+            yoyo: false,
+            repeat: 3,
+            duration: Math.floor(2000 / 3),
+            hold: 500,
+            ease: "Sine.easeInOut"
+        });
+        const warnText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.displayHeight * 0.9,
+            "ACHTUNG! EXKUR COUNTERDEFENSE IS ON TO US!",
+            {
+                fontSize: 36,
+                color: "#0f0",
+                fontStyle: "bold"
+            }
+        );
+        this.tweens.add({
+            targets: warnText,
+            alpha: 0,
+            yoyo: false,
+            repeat: 0,
+            duration: 4000,
+            ease: "Sine.easeInOut"
+        });
     }
 }
 
