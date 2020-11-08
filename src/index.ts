@@ -45,11 +45,9 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
 }
 
 class ExcurzoneMain extends Phaser.Scene {
-    constructor(
-        private gameModel: ExcurzoneGame
-    ) {
-        super(configMaker({key: "main"}));
-    }
+    private playerInterfaceVisible: boolean;
+    private isInterfaceRectClickable: boolean;
+    private gameModel: ExcurzoneGame;
 
     private preload(): void {
         this.load.image("topography", "img/contours.png");
@@ -57,14 +55,29 @@ class ExcurzoneMain extends Phaser.Scene {
 
     private createInterfaceRect(): void {
         const rectYOffset = 100;
-        this.add.rectangle(
-            this.cameras.main.centerX,
-            this.cameras.main.centerY,
-            Math.floor(this.cameras.main.displayWidth * 0.8),
-            this.cameras.main.displayHeight - rectYOffset,
-            CONTAINER_BG,
-            60
-        );
+        console.log("In main is interface now visible", this.playerInterfaceVisible);
+        if (this.playerInterfaceVisible) {
+            const rect = this.add.rectangle(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY,
+                Math.floor(this.cameras.main.displayWidth * 0.8),
+                this.cameras.main.displayHeight - rectYOffset,
+                CONTAINER_BG,
+                60
+            );
+            rect.setInteractive(new Phaser.Geom.Rectangle(
+                0, 0, rect.width, rect.height
+            ), Phaser.Geom.Rectangle.Contains);
+            rect.on("pointerdown", (pointer: any) => {this.rectClick(pointer)});
+        }
+    }
+
+    private rectClick(pointer: any): void {
+        this.scene.start("choosing", {gameModel: this.gameModel});
+    }
+
+    private writeText(): void {
+        const rectYOffset = 100;
         this.add.text(
             this.cameras.main.centerX / 2,
             rectYOffset + 8,
@@ -87,14 +100,15 @@ class ExcurzoneMain extends Phaser.Scene {
     private addPlayerKurzor(): void {
         const playerCartesian: number[] = this.computeScaledPlayerLocation();
         const playerRadius: number = 4;
-        const pulseCirRadius: number = playerRadius * 100;
+        const pulseCirRadius: number = playerRadius * 30;
         const pulseCir = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
             pulseCirRadius,
             0x53c50c,
-            0.2
+            0
         );
+        pulseCir.setStrokeStyle(2, 0x53c50c);
         const playerCircle = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
@@ -111,13 +125,12 @@ class ExcurzoneMain extends Phaser.Scene {
             yoyo: false,
             repeat: -1,
             duration: pulseTravelTime,
-            hold: pulseTravelTime,
+            hold: pulseTravelTime / 2,
             ease: 'Sine.easeInOut'
         });
     }
 
-    private create(): void {
-        // The map
+    private addMap(): void {
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
         this.add.grid(
             this.cameras.main.centerX,
@@ -131,6 +144,11 @@ class ExcurzoneMain extends Phaser.Scene {
             GRID_LINES,
             undefined
         );
+    }
+
+    private addBasicUIElements(): void {
+        // The map
+        this.addMap();
 
         // The map overlays
         this.addPlayerKurzor();
@@ -139,7 +157,48 @@ class ExcurzoneMain extends Phaser.Scene {
         this.createInterfaceRect();
     }
 
+    private create(): void {
+        console.log("In main create");
+        this.addBasicUIElements();
+        if (this.playerInterfaceVisible) {
+            this.writeText();
+        }
+    }
+
     public update(): void {
+    }
+}
+
+class Intro extends ExcurzoneMain {
+    constructor() {
+        super(configMaker({key: "intro"}));
+        this.playerInterfaceVisible = true;
+        this.isInterfaceRectClickable = true;
+    }
+
+    private init(data: any): void {
+        this.gameModel = new ExcurzoneGame([]);
+    }
+}
+
+class BaseChoosing extends ExcurzoneMain {
+    constructor(){
+        super(configMaker({key: "choosing"}));
+        this.playerInterfaceVisible = false;
+        this.isInterfaceRectClickable = false;
+    }
+
+    public init(data: any): void {
+        this.gameModel = data.gameModel;
+        console.log("In BaseChoosing", data.gameModel);
+    }
+
+    private rectClick(pointer: any): void {
+    }
+
+    private create(): void {
+        console.log("BaseChoosing create");
+        super.create();
     }
 }
 
@@ -154,7 +213,7 @@ window.onresize = (event: Event) => {
 };
 
 window.onload = (event: Event) => {
-    const scenesConfig = {"scene": [new ExcurzoneMain(new ExcurzoneGame([]))]};
+    const scenesConfig = {"scene": [Intro, BaseChoosing]};
     game = new Phaser.Game(configMaker(scenesConfig));
     // @ts-ignore
     window.onresize(event);
