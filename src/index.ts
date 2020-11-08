@@ -61,6 +61,8 @@ class ExcurzoneMain extends Phaser.Scene {
     // @ts-ignore FIXME later
     protected gameModel: ExcurzoneGame;
 
+    protected isPlayerDead: boolean = false;
+
     private preload(): void {
         this.load.image("topography", "img/contours.png");
     }
@@ -88,15 +90,15 @@ class ExcurzoneMain extends Phaser.Scene {
             playerCartesian[0],
             playerCartesian[1],
             pulseCirRadius,
-            0x53c50c,
+            this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x53c50c,
             0
         );
-        pulseCir.setStrokeStyle(2, 0x53c50c);
+        pulseCir.setStrokeStyle(2, this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x53c50c);
         const playerCircle = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
             playerRadius,
-            0x538b0c,
+            this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x538b0c,
             undefined
         );
         // Relation to pulseCir?
@@ -260,17 +262,33 @@ class BaseChoosing extends ExcurzoneMain {
     
     public update(): void {
         this.timeText.setText(this.createTimerLabel());
+        // FIXME This would benefit from a proper timer.
         if ((this.getTimeInScene() - this.lastCounterdefenseCheck) > BaseChoosing.COUNTERDEFENSE_PERIOD) {
             const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
             this.lastCounterdefenseCheck = this.getTimeInScene();
 
             if (cdfCheck){
                 // GAME OVER
+                this.setGameOver();
                 console.log("GAME OVER!");
             } else {
                 this.flashWarning();
             }
         }
+    }
+
+    private setGameOver(): void {
+        const warnText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.displayHeight * 0.9,
+            "THE EXKURS CAUGHT OUR PROBE",
+            {
+                fontSize: 36,
+                color: "#f00",
+                fontStyle: "bold"
+            }
+        );
+        this.isPlayerDead = true;
     }
 
     private flashWarning(): void {
