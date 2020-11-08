@@ -242,7 +242,6 @@ class MainGame extends ExcurzoneMain {
         this.gameUIState = data.uiState;
         this.gameUIState.playerInterfaceVisible = false;
         this.gameUIState.isInterfaceRectClickable = false;
-        console.log("In BaseChoosing", this.time.now, this.timeOffset);
         this.time.paused = false;
     }
 
@@ -367,22 +366,26 @@ class MainGame extends ExcurzoneMain {
         this.addRadarStatus();
         this.addTravelStatus();
     }
+
+    private counterDefenseCheck(): void {
+        const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
+        this.lastCounterdefenseCheck = this.getTimeInScene();
+
+        if (cdfCheck){
+            // GAME OVER
+            this.setGameOver();
+            console.log("GAME OVER!");
+        } else {
+            this.flashWarning();
+        }
+    }
     
     public update(): void {
         if (!this.isPlayerDead) {
             this.timeText.setText(this.createTimerLabel());
             // FIXME This would benefit from a proper timer.
             if ((this.getTimeInScene() - this.lastCounterdefenseCheck) > MainGame.COUNTERDEFENSE_PERIOD) {
-                const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
-                this.lastCounterdefenseCheck = this.getTimeInScene();
-
-                if (cdfCheck){
-                    // GAME OVER
-                    this.setGameOver();
-                    console.log("GAME OVER!");
-                } else {
-                    this.flashWarning();
-                }
+                this.counterDefenseCheck();
             }
             this.addRadarStatus();
             this.addTravelStatus();
