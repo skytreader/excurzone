@@ -257,16 +257,17 @@ class BaseChoosing extends ExcurzoneMain {
         let runningHeight = instructions.height + 108;
         const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
         const isVirgin: boolean = this.baseChoices.length == 0;
-        for (var i = 0; i < this.gameModel.getBaseCount() && (this.currentDestination >= 0 && !isVirgin); i++){
-            const base: SignificantLocation = this.gameModel.getBase(i);
+        for (var i = 0; i < this.gameModel.getBaseCount() && isVirgin; i++){
             if (isVirgin) {
+                const base: SignificantLocation = this.gameModel.getBase(i);
+                //console.log(base);
                 this.baseChoices[i] = this.add.text(
                     xAlign,
                     runningHeight + 13,
                     "ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km",
                     {
                         fontSize: 20,
-                        color: base.getIsRevealed() ? COOLNESS : "#fff",
+                        //color: this.gameModel.getBase(i).getIsRevealed() ? COOLNESS : "#fff",
                         fontStyle: (this.currentDestination == i) ? "bold" : ""
                     }
                 );
@@ -277,7 +278,7 @@ class BaseChoosing extends ExcurzoneMain {
                     this.currentDestination = i;
                 });
                 runningHeight += this.baseChoices[i].height;
-            } else {
+            } else if (this.currentDestination >= 0) {
                 this.baseChoices[i].setText("ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km");
                 this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
             }
@@ -310,15 +311,15 @@ class BaseChoosing extends ExcurzoneMain {
             this.radarStatus = this.add.text(
                 this.cameras.main.displayWidth * 0.8,
                 36 + this.timeText.height,
-                "RADAR: " + (this.gameModel.isRadarFixed ? "FIXED" : "UNRELIABLE"),
+                "RADAR: " + (this.gameModel.getIsRadarFixed() ? "FIXED" : "UNRELIABLE"),
                 {
                     fontSize: 21,
-                    color: this.gameModel.isRadarFixed ? COOLNESS : "#f00",
+                    color: this.gameModel.getIsRadarFixed() ? COOLNESS : "#f00",
                     fontStyle: "bold"
                 }
             );
         } else {
-            this.radarStatus.setText("RADAR: " + (this.gameModel.isRadarFixed ? "FIXED" : "UNRELIABLE"));
+            this.radarStatus.setText("RADAR: " + (this.gameModel.getIsRadarFixed() ? "FIXED" : "UNRELIABLE"));
         }
     }
 

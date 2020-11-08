@@ -198,6 +198,10 @@ export class ExcurzoneGame {
         this.bases[index].setIsRevealed(isVisible);
     }
 
+    public getIsRadarFixed(): boolean {
+        return this.isRadarFixed;
+    }
+
     public getBase(index: number): SignificantLocation {
         return this.bases[index];
     }
@@ -207,7 +211,7 @@ export class ExcurzoneGame {
     }
 
     public isGameEnd(): boolean {
-        const allBasesRevealed: boolean = true;
+        let allBasesRevealed: boolean = true;
         for (var i = 0; i < this.bases.length; i++){
             if (!this.bases[i].getIsRevealed()){
                 allBasesRevealed = false;
