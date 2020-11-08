@@ -190,6 +190,10 @@ export class ExcurzoneGame {
         return this.planetRadius;
     }
 
+    public changeBaseVisibility(index: number, isVisible: boolean): void {
+        this.bases[i].setIsRevealed(isVisible);
+    }
+
     /**
     Compute the player's current distance from all . This already represents
     part of the game mechanic where the player's distance computer is 
