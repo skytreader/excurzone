@@ -21,8 +21,7 @@ CLICK TO START MISSION
 `
 
 const BASES_INSTRUCTIONS: string = `
-These are the bases that our probe discovered. Which would you like to attack
-first?
+These are the bases that our probe discovered. Which would you like to attack?
 `
 
 function gid(id: string): HTMLElement | null {
@@ -300,15 +299,12 @@ class BaseChoosing extends ExcurzoneMain {
                     this.currentDestination = index;
                     this.probeInTransit = true;
                     this.time.delayedCall(
-                        Math.floor(baseDistances[index] / 1000), () => {this.setPlayerLoc(index)}, [], this
+                        Math.floor(baseDistances[index]), () => {this.setPlayerLoc(index)}, [], this
                     );
                     console.log(this);
                 });
                 runningHeight += this.baseChoices[i].height;
             } else if (this.currentDestination >= 0 && !this.probeInTransit) {
-                console.log("currentDest i", this.currentDestination, i);
-                this.baseChoices[i].setText("ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km" +((this.currentDestination == i) ? " [DEST]" : ""));
-                this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
             }
         }
     }
@@ -318,6 +314,8 @@ class BaseChoosing extends ExcurzoneMain {
         const baseCartesian: number[] = this.coordsToGameCartesian(base);
         this.gameModel.setCurrentPlayerLocation(base);
         this.probeInTransit = false;
+        this.baseChoices[i].setText(this.baseChoices[i].text +((this.currentDestination == i) ? " [REACHED]" : ""));
+        this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
         const pulseCir = this.add.circle(
             baseCartesian[0],
             baseCartesian[1],
