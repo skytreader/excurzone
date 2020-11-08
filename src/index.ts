@@ -167,7 +167,7 @@ class ExcurzoneMain extends Phaser.Scene {
     }
 
     protected create(): void {
-        console.log("In main create");
+        console.log("In main create", this.gameUIState);
         this.addBasicUIElements();
         if (this.gameUIState.playerInterfaceVisible) {
             this.writeText();
@@ -193,8 +193,7 @@ class Intro extends ExcurzoneMain {
 class BaseChoosing extends ExcurzoneMain {
     constructor(){
         super(configMaker({key: "choosing"}));
-        this.gameUIState.playerInterfaceVisible = false;
-        this.gameUIState.isInterfaceRectClickable = false;
+        this.gameUIState = new GameUIState(false, false);
     }
 
     public init(data: any): void {
