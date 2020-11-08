@@ -64,6 +64,10 @@ export class Coordinate {
         const z = planetRadius * Math.sin(latRad);
         return [x, z];
     }
+
+    public toString(): string {
+        return this.latitude + " " + this.longitude;
+    }
 }
 
 export class SignificantLocation {
@@ -76,7 +80,7 @@ export class SignificantLocation {
         this.isRevealed = false;
     }
 
-    public getLocation() {
+    public getLocation(): Coordinate {
         return this.location;
     }
 
@@ -131,11 +135,11 @@ class CoordinateGenerator {
     }
 }
 
-class SignificantLocationGenerator {
+export class SignificantLocationGenerator {
     private coordinateGenerator: CoordinateGenerator;
     constructor(
         private radarCorrectorRate: number,
-        private counterAttackerRate: number
+        private counterAttackerRate: number // FIXME is currently useless!
     ){
         this.coordinateGenerator = new CoordinateGenerator(7);
     }
@@ -196,6 +200,21 @@ export class ExcurzoneGame {
 
     public getBase(index: number): SignificantLocation {
         return this.bases[index];
+    }
+
+    public getBaseCount(): number {
+        return this.bases.length;
+    }
+
+    public isGameEnd(): boolean {
+        const allBasesRevealed: boolean = true;
+        for (var i = 0; i < this.bases.length; i++){
+            if (!this.bases[i].getIsRevealed()){
+                allBasesRevealed = false;
+                break;
+            }
+        }
+        return allBasesRevealed;
     }
 
     /**

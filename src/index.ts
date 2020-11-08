@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import {SignificantLocation, ExcurzoneGame} from './model';
+import {SignificantLocation, SignificantLocationGenerator, ExcurzoneGame} from './model';
 import {ExkurCounterdefense, LinearExkurCounterdefense} from './livemodels';
 
 const PARENT_ID = "excurzone-target";
@@ -8,6 +8,7 @@ const CONTAINER_BG = 0x1c1c1c;
 const GRID_FILL = 0x383838;
 const GRID_LINES = 0x384438;
 const FARBE_DER_DRINGLICHKEIT = 0xff0000;
+const COOLNESS = 0x598bd4;
 
 const INITIAL_INSTRUCTIONS: string = `
 You have arrived at your assignment: a planet held captive by the evil Exkur
@@ -17,6 +18,11 @@ the rebellion's intelligence and equipment is lacking. Can you destroy all the
 bases before the The Empire's counterdefense detects your presence?
 
 CLICK TO START MISSION
+`
+
+const BASES_INSTRUCTIONS: string = `
+These are the bases that our probe discovered. Which would you like to attack
+first?
 `
 
 function gid(id: string): HTMLElement | null {
@@ -141,7 +147,6 @@ class ExcurzoneMain extends Phaser.Scene {
 
     protected createInterfaceRect(clickHandler?: Function): void {
         const rectYOffset = 100;
-        console.log("In main is interface now visible", this.gameUIState.playerInterfaceVisible);
         if (this.gameUIState.playerInterfaceVisible) {
             const rect = this.add.rectangle(
                 this.cameras.main.centerX,
@@ -177,7 +182,8 @@ class Intro extends ExcurzoneMain {
     }
 
     private init(data: any): void {
-        this.gameModel = new ExcurzoneGame([]);
+        const slGenerator = new SignificantLocationGenerator(0.4, 0.3);
+        this.gameModel = new ExcurzoneGame(slGenerator.generateSignificantLocations(10));
         // TODO Maybe set time.paused here?
     }
 
@@ -206,8 +212,12 @@ class Intro extends ExcurzoneMain {
 
 // What a horrible class name
 class BaseChoosing extends ExcurzoneMain {
+    // @ts-ignore FIXME initialization
     private timedEvent: Phaser.Time.Clock;
+    // @ts-ignore FIXME initialization
     private timeText: Phaser.GameObjects.Text;
+    // @ts-ignore FIXME initialization
+    private radarStatus: Phaser.GameObjects.Text;
 
     // Hack because I can't get the timer to stay still in the intro
     private timeOffset: number = 0;
@@ -234,6 +244,31 @@ class BaseChoosing extends ExcurzoneMain {
         return this.time.now - this.timeOffset;
     }
 
+    protected writeText(): void {
+        const xAlign: number = this.cameras.main.displayWidth * 0.08;
+        const instructions = this.add.text(
+            xAlign,
+            108,
+            BASES_INSTRUCTIONS
+        );
+        let runningHeight = instructions.height + 108;
+        const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
+        for (var i = 0; i < this.gameModel.getBaseCount(); i++){
+            const base: SignificantLocation = this.gameModel.getBase(i);
+            const choice = this.add.text(
+                xAlign,
+                runningHeight + 13,
+                "ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km",
+                {
+                    fontSize: 20,
+                    color: base.getIsRevealed() ? COOLNESS : "#fff",
+                    fontStyle: "bold"
+                }
+            );
+            runningHeight += choice.height;
+        }
+    }
+
     private createTimerLabel(): string {
         if (this.timeOffset == 0){
             this.timeOffset = this.time.now;
@@ -255,9 +290,24 @@ class BaseChoosing extends ExcurzoneMain {
         );
     }
 
+    private addRadarStatus(): void {
+        this.radarStatus = this.add.text(
+            this.cameras.main.displayWidth * 0.8,
+            36 + this.timeText.height,
+            "RADAR: " + (this.gameModel.isRadarFixed ? "FIXED" : "UNRELIABLE"),
+            {
+                fontSize: 21,
+                color: this.gameModel.isRadarFixed ? COOLNESS : "#f00",
+                fontStyle: "bold"
+            }
+        );
+    }
+
     protected create(): void {
         super.create();
         this.addTimer();
+        this.writeText();
+        this.addRadarStatus();
     }
     
     public update(): void {
