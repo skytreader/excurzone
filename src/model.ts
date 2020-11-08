@@ -191,11 +191,11 @@ export class ExcurzoneGame {
     }
 
     public changeBaseVisibility(index: number, isVisible: boolean): void {
-        this.bases[i].setIsRevealed(isVisible);
+        this.bases[index].setIsRevealed(isVisible);
     }
 
     public getBase(index: number): SignificantLocation {
-        return this.bases[i];
+        return this.bases[index];
     }
 
     /**

@@ -44,10 +44,19 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
     return config;
 }
 
+class GameUIState {
+    constructor(
+        public playerInterfaceVisible: boolean,
+        public isInterfaceRectClickable: boolean
+    ){}
+}
+
+const BASE_STATE = new GameUIState(true, true);
+
 class ExcurzoneMain extends Phaser.Scene {
-    private playerInterfaceVisible: boolean;
-    private isInterfaceRectClickable: boolean;
-    private gameModel: ExcurzoneGame;
+    protected gameUIState: GameUIState = BASE_STATE;
+    // @ts-ignore FIXME later
+    protected gameModel: ExcurzoneGame;
 
     private preload(): void {
         this.load.image("topography", "img/contours.png");
@@ -55,8 +64,8 @@ class ExcurzoneMain extends Phaser.Scene {
 
     private createInterfaceRect(): void {
         const rectYOffset = 100;
-        console.log("In main is interface now visible", this.playerInterfaceVisible);
-        if (this.playerInterfaceVisible) {
+        console.log("In main is interface now visible", this.gameUIState.playerInterfaceVisible);
+        if (this.gameUIState.playerInterfaceVisible) {
             const rect = this.add.rectangle(
                 this.cameras.main.centerX,
                 this.cameras.main.centerY,
@@ -157,10 +166,10 @@ class ExcurzoneMain extends Phaser.Scene {
         this.createInterfaceRect();
     }
 
-    private create(): void {
+    protected create(): void {
         console.log("In main create");
         this.addBasicUIElements();
-        if (this.playerInterfaceVisible) {
+        if (this.gameUIState.playerInterfaceVisible) {
             this.writeText();
         }
     }
@@ -172,8 +181,8 @@ class ExcurzoneMain extends Phaser.Scene {
 class Intro extends ExcurzoneMain {
     constructor() {
         super(configMaker({key: "intro"}));
-        this.playerInterfaceVisible = true;
-        this.isInterfaceRectClickable = true;
+        this.gameUIState.playerInterfaceVisible = true;
+        this.gameUIState.isInterfaceRectClickable = true;
     }
 
     private init(data: any): void {
@@ -184,8 +193,8 @@ class Intro extends ExcurzoneMain {
 class BaseChoosing extends ExcurzoneMain {
     constructor(){
         super(configMaker({key: "choosing"}));
-        this.playerInterfaceVisible = false;
-        this.isInterfaceRectClickable = false;
+        this.gameUIState.playerInterfaceVisible = false;
+        this.gameUIState.isInterfaceRectClickable = false;
     }
 
     public init(data: any): void {
@@ -193,10 +202,7 @@ class BaseChoosing extends ExcurzoneMain {
         console.log("In BaseChoosing", data.gameModel);
     }
 
-    private rectClick(pointer: any): void {
-    }
-
-    private create(): void {
+    protected create(): void {
         console.log("BaseChoosing create");
         super.create();
     }
