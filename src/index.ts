@@ -44,6 +44,8 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
     return config;
 }
 
+// TODO Feel like these are the same. If the interface is visible then it it
+// clickable. Kein Unterschied!
 class GameUIState {
     constructor(
         public playerInterfaceVisible: boolean,
@@ -62,36 +64,7 @@ class ExcurzoneMain extends Phaser.Scene {
         this.load.image("topography", "img/contours.png");
     }
 
-    private createInterfaceRect(): void {
-        const rectYOffset = 100;
-        console.log("In main is interface now visible", this.gameUIState.playerInterfaceVisible);
-        if (this.gameUIState.playerInterfaceVisible) {
-            const rect = this.add.rectangle(
-                this.cameras.main.centerX,
-                this.cameras.main.centerY,
-                Math.floor(this.cameras.main.displayWidth * 0.8),
-                this.cameras.main.displayHeight - rectYOffset,
-                CONTAINER_BG,
-                60
-            );
-            rect.setInteractive(new Phaser.Geom.Rectangle(
-                0, 0, rect.width, rect.height
-            ), Phaser.Geom.Rectangle.Contains);
-            rect.on("pointerdown", (pointer: any) => {this.rectClick(pointer)});
-        }
-    }
-
-    private rectClick(pointer: any): void {
-        this.scene.start("choosing", {gameModel: this.gameModel});
-    }
-
-    private writeText(): void {
-        const rectYOffset = 100;
-        this.add.text(
-            this.cameras.main.centerX / 2,
-            rectYOffset + 8,
-            INITIAL_INSTRUCTIONS
-        );
+    protected writeText(): void {
     }
 
     private computeScaledPlayerLocation(): number[] {
@@ -161,17 +134,11 @@ class ExcurzoneMain extends Phaser.Scene {
 
         // The map overlays
         this.addPlayerKurzor();
-
-        // The player controls/spaceship interface.
-        this.createInterfaceRect();
     }
 
     protected create(): void {
         console.log("In main create", this.gameUIState);
         this.addBasicUIElements();
-        if (this.gameUIState.playerInterfaceVisible) {
-            this.writeText();
-        }
     }
 
     public update(): void {
@@ -188,17 +155,64 @@ class Intro extends ExcurzoneMain {
     private init(data: any): void {
         this.gameModel = new ExcurzoneGame([]);
     }
+
+    protected create(): void {
+        super.create();
+        // The player controls/spaceship interface.
+        this.createInterfaceRect();
+        if (this.gameUIState.playerInterfaceVisible) {
+            this.writeText();
+        }
+    }
+
+    protected writeText(): void {
+        const rectYOffset = 100;
+        this.add.text(
+            this.cameras.main.centerX / 2,
+            rectYOffset + 8,
+            INITIAL_INSTRUCTIONS
+        );
+    }
+
+    private createInterfaceRect(): void {
+        const rectYOffset = 100;
+        console.log("In main is interface now visible", this.gameUIState.playerInterfaceVisible);
+        if (this.gameUIState.playerInterfaceVisible) {
+            const rect = this.add.rectangle(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY,
+                Math.floor(this.cameras.main.displayWidth * 0.8),
+                this.cameras.main.displayHeight - rectYOffset,
+                CONTAINER_BG,
+                60
+            );
+            rect.setInteractive(new Phaser.Geom.Rectangle(
+                0, 0, rect.width, rect.height
+            ), Phaser.Geom.Rectangle.Contains);
+            rect.on("pointerdown", (pointer: any) => {this.rectClick(pointer)});
+        }
+    }
+
+    private rectClick(pointer: any): void {
+        this.scene.start("choosing", {gameModel: this.gameModel, uiState: this.gameUIState});
+    }
 }
 
 class BaseChoosing extends ExcurzoneMain {
+    private timedEvent: Phaser.Time.Clock;
     constructor(){
         super(configMaker({key: "choosing"}));
-        this.gameUIState = new GameUIState(false, false);
     }
 
     public init(data: any): void {
         this.gameModel = data.gameModel;
+        this.gameUIState = data.uiState;
+        this.gameUIState.playerInterfaceVisible = false;
+        this.gameUIState.isInterfaceRectClickable = false;
         console.log("In BaseChoosing", data.gameModel);
+    }
+
+    private addTimer(): void {
     }
 
     protected create(): void {
