@@ -1,14 +1,25 @@
 import Phaser from 'phaser';
 import {SignificantLocation, ExcurzoneGame} from './model';
+import {LinearExkurCounterdefense} from './livemodels';
 
 const PARENT_ID = "excurzone-target";
 
+const CONTAINER_BG = 0x1c1c1c;
+const GRID_FILL = 0x383838;
+const GRID_LINES = 0x384438;
+
+const INITIAL_INSTRUCTIONS: string = `
+You have arrived at your assignment: a planet held captive by the evil Exkur
+Empire. Observing from a covert location at the atmosphere, you send your
+sabotage probe to destroy military outposts and free the planet. Unfortunately,
+the rebellion's intelligence and equipment is lacking. Can you destroy all the
+bases before the The Empire's counterdefense detects your presence?
+
+CLICK TO START MISSION
+`
+
 function gid(id: string): HTMLElement | null {
     return document.getElementById(id);
-}
-
-function newNode(tag: string): HTMLElement {
-    return document.createElement(tag);
 }
 
 function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.GameConfig {
@@ -35,13 +46,79 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
 
 class ExcurzoneMain extends Phaser.Scene {
     constructor(
+        private gameModel: ExcurzoneGame
     ) {
         super(configMaker({key: "main"}));
     }
 
-    private setupGrid(colCount: number, rowCount: number, gridUpperLeftX: number, gridUpperLeftY: number): void {
-        const cellWidth = Math.floor((this.cameras.main.displayWidth - (gridUpperLeftX * 2)) / colCount);
-        const cellHeight = Math.floor((this.cameras.main.displayHeight - (gridUpperLeftY * 2)) / rowCount);
+    private preload(): void {
+        this.load.image("topography", "img/contours.png");
+    }
+
+    private createInterfaceRect(): void {
+        const rectYOffset = 100;
+        this.add.rectangle(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            Math.floor(this.cameras.main.displayWidth * 0.8),
+            this.cameras.main.displayHeight - rectYOffset,
+            CONTAINER_BG,
+            60
+        );
+        this.add.text(
+            this.cameras.main.centerX / 2,
+            rectYOffset + 8,
+            INITIAL_INSTRUCTIONS
+        );
+    }
+
+    private computeScaledPlayerLocation(): number[] {
+        const playerCartesian: number[] = this.gameModel.getCurrentPlayerLocation().cartesianProjection(this.gameModel.getPlanetRadius());
+        // Remember we are scaling from the origin
+        const xScaleFactor = this.cameras.main.centerX / this.gameModel.getPlanetRadius();
+        const yScaleFactor = this.cameras.main.centerY / this.gameModel.getPlanetRadius();
+        
+        // Don't forget to translate since 0,0 for computers is the upper left corner
+        const xPlayerScale = playerCartesian[0] * xScaleFactor + this.cameras.main.centerX;
+        const yPlayerScale = playerCartesian[1] * yScaleFactor + this.cameras.main.centerY;
+        return [xPlayerScale, yPlayerScale];
+    }
+
+    private addPlayerKurzor(): void {
+        const playerCartesian: number[] = this.computeScaledPlayerLocation();
+        const playerRadius: number = 4;
+        const pulseCirRadius: number = playerRadius * 100;
+        const pulseCir = this.add.circle(
+            playerCartesian[0],
+            playerCartesian[1],
+            pulseCirRadius,
+            0x53c50c,
+            0.2
+        );
+        const playerCircle = this.add.circle(
+            playerCartesian[0],
+            playerCartesian[1],
+            playerRadius,
+            0x538b0c,
+            undefined
+        );
+        // Relation to pulseCir?
+        const pulseTravelTime = 4000;
+        this.tweens.add({
+            targets: pulseCir,
+            scaleX: 0.001,
+            scaleY: 0.001,
+            yoyo: false,
+            repeat: -1,
+            duration: pulseTravelTime,
+            hold: pulseTravelTime,
+            ease: 'Sine.easeInOut'
+        });
+    }
+
+    private create(): void {
+        // The map
+        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
         this.add.grid(
             this.cameras.main.centerX,
             this.cameras.main.centerY,
@@ -49,20 +126,17 @@ class ExcurzoneMain extends Phaser.Scene {
             this.cameras.main.displayHeight,
             100,
             100,
-            0x383838,
-            undefined,
-            0x384438,
+            GRID_FILL,
+            70,
+            GRID_LINES,
             undefined
         );
-    }
 
-    private preload(): void {
-        this.load.image("topography", "img/contours.png");
-    }
+        // The map overlays
+        this.addPlayerKurzor();
 
-    private create(): void {
-        this.setupGrid(10, 4, 100, 0);
-        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "topography");
+        // The player controls/spaceship interface.
+        this.createInterfaceRect();
     }
 
     public update(): void {
@@ -80,7 +154,7 @@ window.onresize = (event: Event) => {
 };
 
 window.onload = (event: Event) => {
-    const scenesConfig = {"scene": [ExcurzoneMain]};
+    const scenesConfig = {"scene": [new ExcurzoneMain(new ExcurzoneGame([]))]};
     game = new Phaser.Game(configMaker(scenesConfig));
     // @ts-ignore
     window.onresize(event);
