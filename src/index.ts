@@ -218,6 +218,9 @@ class BaseChoosing extends ExcurzoneMain {
     private timeText: Phaser.GameObjects.Text;
     // @ts-ignore FIXME initialization
     private radarStatus: Phaser.GameObjects.Text;
+    private currentDestination: number = -1;
+    // @ts-ignore FIXME initialization
+    private baseChoices: Phaser.GameObjects.Text[] = [];
 
     // Hack because I can't get the timer to stay still in the intro
     private timeOffset: number = 0;
@@ -253,19 +256,31 @@ class BaseChoosing extends ExcurzoneMain {
         );
         let runningHeight = instructions.height + 108;
         const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
-        for (var i = 0; i < this.gameModel.getBaseCount(); i++){
+        const isVirgin: boolean = this.baseChoices.length == 0;
+        for (var i = 0; i < this.gameModel.getBaseCount() && (this.currentDestination >= 0 && !isVirgin); i++){
             const base: SignificantLocation = this.gameModel.getBase(i);
-            const choice = this.add.text(
-                xAlign,
-                runningHeight + 13,
-                "ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km",
-                {
-                    fontSize: 20,
-                    color: base.getIsRevealed() ? COOLNESS : "#fff",
-                    fontStyle: "bold"
-                }
-            );
-            runningHeight += choice.height;
+            if (isVirgin) {
+                this.baseChoices[i] = this.add.text(
+                    xAlign,
+                    runningHeight + 13,
+                    "ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km",
+                    {
+                        fontSize: 20,
+                        color: base.getIsRevealed() ? COOLNESS : "#fff",
+                        fontStyle: (this.currentDestination == i) ? "bold" : ""
+                    }
+                );
+                this.baseChoices[i].setInteractive(new Phaser.Geom.Rectangle(
+                    0, 0, this.baseChoices[i].width, this.baseChoices[i].height,
+                ), Phaser.Geom.Rectangle.Contains);
+                this.baseChoices[i].on("pointerdown", (pointer: any) => {
+                    this.currentDestination = i;
+                });
+                runningHeight += this.baseChoices[i].height;
+            } else {
+                this.baseChoices[i].setText("ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km");
+                this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
+            }
         }
     }
 
@@ -291,16 +306,20 @@ class BaseChoosing extends ExcurzoneMain {
     }
 
     private addRadarStatus(): void {
-        this.radarStatus = this.add.text(
-            this.cameras.main.displayWidth * 0.8,
-            36 + this.timeText.height,
-            "RADAR: " + (this.gameModel.isRadarFixed ? "FIXED" : "UNRELIABLE"),
-            {
-                fontSize: 21,
-                color: this.gameModel.isRadarFixed ? COOLNESS : "#f00",
-                fontStyle: "bold"
-            }
-        );
+        if (this.radarStatus == null){
+            this.radarStatus = this.add.text(
+                this.cameras.main.displayWidth * 0.8,
+                36 + this.timeText.height,
+                "RADAR: " + (this.gameModel.isRadarFixed ? "FIXED" : "UNRELIABLE"),
+                {
+                    fontSize: 21,
+                    color: this.gameModel.isRadarFixed ? COOLNESS : "#f00",
+                    fontStyle: "bold"
+                }
+            );
+        } else {
+            this.radarStatus.setText("RADAR: " + (this.gameModel.isRadarFixed ? "FIXED" : "UNRELIABLE"));
+        }
     }
 
     protected create(): void {
@@ -326,6 +345,8 @@ class BaseChoosing extends ExcurzoneMain {
                     this.flashWarning();
                 }
             }
+            this.writeText();
+            this.addRadarStatus();
         }
     }
 
