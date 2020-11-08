@@ -136,6 +136,27 @@ class ExcurzoneMain extends Phaser.Scene {
         this.addPlayerKurzor();
     }
 
+    protected createInterfaceRect(clickHandler?: Function): void {
+        const rectYOffset = 100;
+        console.log("In main is interface now visible", this.gameUIState.playerInterfaceVisible);
+        if (this.gameUIState.playerInterfaceVisible) {
+            const rect = this.add.rectangle(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY,
+                Math.floor(this.cameras.main.displayWidth * 0.8),
+                this.cameras.main.displayHeight - rectYOffset,
+                CONTAINER_BG,
+                60
+            );
+            rect.setInteractive(new Phaser.Geom.Rectangle(
+                0, 0, rect.width, rect.height
+            ), Phaser.Geom.Rectangle.Contains);
+            if (clickHandler != null || clickHandler != undefined){
+                rect.on("pointerdown", clickHandler);
+            }
+        }
+    }
+
     protected create(): void {
         console.log("In main create", this.gameUIState);
         this.addBasicUIElements();
@@ -154,12 +175,13 @@ class Intro extends ExcurzoneMain {
 
     private init(data: any): void {
         this.gameModel = new ExcurzoneGame([]);
+        this.time.pause = true;
     }
 
     protected create(): void {
         super.create();
         // The player controls/spaceship interface.
-        this.createInterfaceRect();
+        this.createInterfaceRect((pointer:any) => {this.rectClick(pointer)});
         if (this.gameUIState.playerInterfaceVisible) {
             this.writeText();
         }
@@ -174,32 +196,18 @@ class Intro extends ExcurzoneMain {
         );
     }
 
-    private createInterfaceRect(): void {
-        const rectYOffset = 100;
-        console.log("In main is interface now visible", this.gameUIState.playerInterfaceVisible);
-        if (this.gameUIState.playerInterfaceVisible) {
-            const rect = this.add.rectangle(
-                this.cameras.main.centerX,
-                this.cameras.main.centerY,
-                Math.floor(this.cameras.main.displayWidth * 0.8),
-                this.cameras.main.displayHeight - rectYOffset,
-                CONTAINER_BG,
-                60
-            );
-            rect.setInteractive(new Phaser.Geom.Rectangle(
-                0, 0, rect.width, rect.height
-            ), Phaser.Geom.Rectangle.Contains);
-            rect.on("pointerdown", (pointer: any) => {this.rectClick(pointer)});
-        }
-    }
-
     private rectClick(pointer: any): void {
         this.scene.start("choosing", {gameModel: this.gameModel, uiState: this.gameUIState});
     }
 }
 
+// What a horrible class name
 class BaseChoosing extends ExcurzoneMain {
     private timedEvent: Phaser.Time.Clock;
+    private timeText: Phaser.GameObjects.Text;
+
+    // Hack because I can't get the timer to stay still in the intro
+    private timeOffset: number = 0;
     constructor(){
         super(configMaker({key: "choosing"}));
     }
@@ -209,15 +217,38 @@ class BaseChoosing extends ExcurzoneMain {
         this.gameUIState = data.uiState;
         this.gameUIState.playerInterfaceVisible = false;
         this.gameUIState.isInterfaceRectClickable = false;
-        console.log("In BaseChoosing", data.gameModel);
+        console.log("In BaseChoosing", this.time.now, this.timeOffset);
+    }
+
+    private createTimerLabel(): string {
+        if (this.timeOffset == 0){
+            this.timeOffset = this.time.now;
+        }
+        return "MISSION TIME: " + Math.floor((this.time.now - this.timeOffset) / 1000) + "cyc|ESF"
     }
 
     private addTimer(): void {
+        this.time.paused = false;
+        this.timeText = this.add.text(
+            this.cameras.main.displayWidth * 0.8,
+            36,
+            this.createTimerLabel(),
+            {
+                fontSize: 21,
+                color: "#f00",
+                fontStyle: "bold"
+            }
+        );
     }
 
     protected create(): void {
         console.log("BaseChoosing create");
         super.create();
+        this.addTimer();
+    }
+    
+    public update(): void {
+        this.timeText.setText(this.createTimerLabel());
     }
 }
 
