@@ -264,6 +264,10 @@ class MainGame extends ExcurzoneMain {
         return this.time.now - this.timeOffset;
     }
 
+    private createBaseDisplayText(baseDistances: number[], baseIndex: number): string {
+        return "ABCDEFGHIJ".charAt(baseIndex) + ": " + baseDistances[baseIndex] + "km";
+    }
+
     protected writeText(): void {
         const xAlign: number = this.cameras.main.displayWidth * 0.08;
         const instructions = this.add.text(
@@ -275,13 +279,13 @@ class MainGame extends ExcurzoneMain {
         const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
         for (var i = 0; i < this.gameModel.getBaseCount(); i++) {
             const base: SignificantLocation = this.gameModel.getBase(i);
-            console.log(this.baseChoices);
             this.baseChoices[i] = this.add.text(
                 xAlign,
                 runningHeight + 13,
-                "ABCDEFGHIJ".charAt(i) + ": " + baseDistances[i] + "km",
+                this.createBaseDisplayText(baseDistances, i),
                 {
                     fontSize: 20,
+                    // FIXME No need to already decide here
                     color: this.gameModel.getBase(i).getIsRevealed() ? COOLNESS : "#fff",
                     fontStyle: (this.currentDestination == i) ? "bold" : ""
                 }
@@ -289,7 +293,8 @@ class MainGame extends ExcurzoneMain {
             this.baseChoices[i].setInteractive(new Phaser.Geom.Rectangle(
                 0, 0, this.baseChoices[i].width, this.baseChoices[i].height,
             ), Phaser.Geom.Rectangle.Contains);
-            console.log("set click for", i);
+            // Hack because somehow i seems to fall out of scope on callback
+            // no matter what I do.
             const index = i;
             this.baseChoices[i].on("pointerdown", (pointer: any) => {
                 this.currentDestination = index;
@@ -297,27 +302,28 @@ class MainGame extends ExcurzoneMain {
                 this.time.delayedCall(
                     Math.floor(baseDistances[index]), () => {this.setPlayerLoc(index)}, [], this
                 );
-                console.log(this);
             });
             runningHeight += this.baseChoices[i].height;
         }
     }
 
     private setPlayerLoc(i: number): void {
-        const base: Coordinate = this.gameModel.getBase(i).getLocation();
-        const baseCartesian: number[] = this.coordsToGameCartesian(base);
-        this.gameModel.setCurrentPlayerLocation(base);
-        this.updatePlayerKurzor();
-        this.probeInTransit = false;
-        this.baseChoices[i].setText(this.baseChoices[i].text +((this.currentDestination == i) ? " [REACHED]" : ""));
-        this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
-        const pulseCir = this.add.circle(
-            baseCartesian[0],
-            baseCartesian[1],
-            60,
-            COOLNESS,
-            0
-        );
+        if (!this.isPlayerDead) {
+            const base: Coordinate = this.gameModel.getBase(i).getLocation();
+            const baseCartesian: number[] = this.coordsToGameCartesian(base);
+            this.gameModel.setCurrentPlayerLocation(base);
+            this.updatePlayerKurzor();
+            this.probeInTransit = false;
+            this.baseChoices[i].setText(this.baseChoices[i].text +((this.currentDestination == i) ? " [REACHED]" : ""));
+            this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
+            const pulseCir = this.add.circle(
+                baseCartesian[0],
+                baseCartesian[1],
+                60,
+                COOLNESS,
+                0
+            );
+        }
     }
 
     private createTimerLabel(): string {
