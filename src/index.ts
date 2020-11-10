@@ -65,6 +65,10 @@ class ExcurzoneMain extends Phaser.Scene {
     protected gameUIState: GameUIState = BASE_STATE;
     // @ts-ignore FIXME later
     protected gameModel: ExcurzoneGame;
+    // @ts-ignore
+    protected playerCursor: Phaser.GameObjects.Arc;
+    // @ts-ignore
+    protected playerPulse: Phaser.GameObjects.Arc;
 
     protected isPlayerDead: boolean = false;
 
@@ -92,15 +96,15 @@ class ExcurzoneMain extends Phaser.Scene {
         const playerCartesian: number[] = this.coordsToGameCartesian(this.gameModel.getCurrentPlayerLocation());
         const playerRadius: number = 4;
         const pulseCirRadius: number = playerRadius * 30;
-        const pulseCir = this.add.circle(
+        this.playerPulse = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
             pulseCirRadius,
             this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x53c50c,
             0
         );
-        pulseCir.setStrokeStyle(2, this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x53c50c);
-        const playerCircle = this.add.circle(
+        this.playerPulse.setStrokeStyle(2, this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x53c50c);
+        this.playerCursor = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
             playerRadius,
@@ -110,7 +114,7 @@ class ExcurzoneMain extends Phaser.Scene {
         // Relation to pulseCir?
         const pulseTravelTime = 4000;
         this.tweens.add({
-            targets: pulseCir,
+            targets: this.playerPulse,
             scaleX: 0.001,
             scaleY: 0.001,
             yoyo: false,
@@ -119,6 +123,17 @@ class ExcurzoneMain extends Phaser.Scene {
             hold: pulseTravelTime / 2,
             ease: 'Sine.easeInOut'
         });
+    }
+
+    protected updatePlayerKurzor(): void {
+        const playerCartesian: number[] = this.coordsToGameCartesian(this.gameModel.getCurrentPlayerLocation());
+        this.playerPulse.x = playerCartesian[0];
+        this.playerPulse.y = playerCartesian[1];
+        this.playerPulse.fillColor = this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x53c50c;
+        this.playerPulse.setStrokeStyle(2, this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x53c50c);
+        this.playerCursor.x = playerCartesian[0];
+        this.playerCursor.y = playerCartesian[1];
+        this.playerCursor.fillColor = this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x538b0c;
     }
 
     private addMap(): void {
@@ -292,6 +307,7 @@ class MainGame extends ExcurzoneMain {
         const base: Coordinate = this.gameModel.getBase(i).getLocation();
         const baseCartesian: number[] = this.coordsToGameCartesian(base);
         this.gameModel.setCurrentPlayerLocation(base);
+        this.updatePlayerKurzor();
         this.probeInTransit = false;
         this.baseChoices[i].setText(this.baseChoices[i].text +((this.currentDestination == i) ? " [REACHED]" : ""));
         this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
@@ -361,8 +377,10 @@ class MainGame extends ExcurzoneMain {
 
     protected create(): void {
         super.create();
-        this.addTimer();
         this.writeText();
+        // These guys are "bunched" together. Perhaps they could be an HTML
+        // Element instead?
+        this.addTimer();
         this.addRadarStatus();
         this.addTravelStatus();
     }
@@ -404,6 +422,8 @@ class MainGame extends ExcurzoneMain {
             }
         );
         this.isPlayerDead = true;
+        // Just for the color change.
+        this.updatePlayerKurzor();
     }
 
     private flashWarning(): void {
