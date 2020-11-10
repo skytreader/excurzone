@@ -265,7 +265,7 @@ class MainGame extends ExcurzoneMain {
     }
 
     private createBaseDisplayText(baseDistances: number[], baseIndex: number): string {
-        return "ABCDEFGHIJ".charAt(baseIndex) + ": " + baseDistances[baseIndex] + "km";
+        return "ABCDEFGHIJ".charAt(baseIndex) + ": " + baseDistances[baseIndex].toFixed(3) + "km";
     }
 
     protected writeText(): void {
