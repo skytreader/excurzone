@@ -250,9 +250,11 @@ class MainGame extends ExcurzoneMain {
     constructor(){
         super(configMaker({key: "maingame"}));
         this.counterdefense = new LinearExkurCounterdefense();
+        console.log("Main game constructed");
     }
 
     public init(data: any): void {
+        console.log("Main game initializing");
         this.gameModel = data.gameModel;
         this.gameUIState = data.uiState;
         this.gameUIState.playerInterfaceVisible = false;
@@ -266,9 +268,6 @@ class MainGame extends ExcurzoneMain {
 
     private createBaseDisplayText(baseDistances: number[], baseIndex: number): string {
         return "ABCDEFGHIJ".charAt(baseIndex) + ": " + baseDistances[baseIndex].toFixed(3) + "km";
-    }
-
-    private displayDistances() {
     }
 
     protected writeText(): void {
@@ -390,6 +389,8 @@ class MainGame extends ExcurzoneMain {
 
     protected create(): void {
         super.create();
+        this.playerCursor.depth = 100;
+        this.playerPulse.depth = 100;
         this.writeText();
         // These guys are "bunched" together. Perhaps they could be an HTML
         // Element instead?
