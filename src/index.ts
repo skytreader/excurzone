@@ -71,6 +71,7 @@ class ExcurzoneMain extends Phaser.Scene {
     protected playerPulse: Phaser.GameObjects.Arc;
 
     protected isPlayerDead: boolean = false;
+    static PLAYER_RADIUS: number = 4;
 
     private preload(): void {
         this.load.image("topography", "img/contours.png");
@@ -94,8 +95,7 @@ class ExcurzoneMain extends Phaser.Scene {
 
     private addPlayerKurzor(): void {
         const playerCartesian: number[] = this.coordsToGameCartesian(this.gameModel.getCurrentPlayerLocation());
-        const playerRadius: number = 4;
-        const pulseCirRadius: number = playerRadius * 30;
+        const pulseCirRadius: number = ExcurzoneMain.PLAYER_RADIUS* 30;
         this.playerPulse = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
@@ -107,7 +107,7 @@ class ExcurzoneMain extends Phaser.Scene {
         this.playerCursor = this.add.circle(
             playerCartesian[0],
             playerCartesian[1],
-            playerRadius,
+            ExcurzoneMain.PLAYER_RADIUS,
             this.isPlayerDead ? FARBE_DER_DRINGLICHKEIT : 0x538b0c,
             undefined
         );
@@ -268,6 +268,9 @@ class MainGame extends ExcurzoneMain {
         return "ABCDEFGHIJ".charAt(baseIndex) + ": " + baseDistances[baseIndex].toFixed(3) + "km";
     }
 
+    private displayDistances() {
+    }
+
     protected writeText(): void {
         const xAlign: number = this.cameras.main.displayWidth * 0.08;
         const instructions = this.add.text(
@@ -307,22 +310,26 @@ class MainGame extends ExcurzoneMain {
         }
     }
 
+    private addBaseMarker(baseCartesianCoords: number[]): void {
+        this.add.circle(
+            baseCartesianCoords[0],
+            baseCartesianCoords[1],
+            ExcurzoneMain.PLAYER_RADIUS * 2,
+            COOLNESS,
+            undefined
+        );
+    }
+
     private setPlayerLoc(i: number): void {
         if (!this.isPlayerDead) {
             const base: Coordinate = this.gameModel.getBase(i).getLocation();
             const baseCartesian: number[] = this.coordsToGameCartesian(base);
+            this.addBaseMarker(baseCartesian);
             this.gameModel.setCurrentPlayerLocation(base);
             this.updatePlayerKurzor();
             this.probeInTransit = false;
             this.baseChoices[i].setText(this.baseChoices[i].text +((this.currentDestination == i) ? " [REACHED]" : ""));
             this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
-            const pulseCir = this.add.circle(
-                baseCartesian[0],
-                baseCartesian[1],
-                60,
-                COOLNESS,
-                0
-            );
         }
     }
 
