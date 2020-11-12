@@ -269,17 +269,22 @@ class MainGame extends ExcurzoneMain {
     }
 
     private createBaseDisplayText(baseDistances: number[], baseIndex: number): string {
-        return "ABCDEFGHIJ".charAt(baseIndex) + ": " + baseDistances[baseIndex].toFixed(3) + "km";
+        if (this.gameModel.getCurrentPlayerLocation().isEqualTo(this.gameModel.getBase(baseIndex).getLocation())) {
+            return "ABCDEFGHIJ".charAt(baseIndex) + ": CURRENT LOCATION";
+        } else {
+            return (
+                "ABCDEFGHIJ".charAt(baseIndex) + ": " +
+                baseDistances[baseIndex].toFixed(3) + "km" +
+                (this.gameModel.getBase(baseIndex).getIsRevealed() ? " [REACHED]" : "")
+            );
+        }
     }
 
     private updateDistanceListing(): void {
         const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
         for (var i = 0; i < this.gameModel.getBaseCount(); i++) {
             const base: SignificantLocation = this.gameModel.getBase(i);
-            this.baseChoices[i].setText((
-                this.createBaseDisplayText(baseDistances, i) +
-                (this.gameModel.getBase(i).getIsRevealed() ? " [REACHED]" : "")
-            ));
+            this.baseChoices[i].setText(this.createBaseDisplayText(baseDistances, i));
             this.baseChoices[i].setFontStyle(this.gameModel.getBase(i).getIsRevealed() ? "bold" : "");
         }
     }
