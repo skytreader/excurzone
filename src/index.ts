@@ -2,13 +2,13 @@ import Phaser from 'phaser';
 import {Coordinate, SignificantLocation, SignificantLocationGenerator, ExcurzoneGame} from './model';
 import {ExkurCounterdefense, LinearExkurCounterdefense} from './livemodels';
 
-const PARENT_ID = "excurzone-target";
+const PARENT_ID: string = "excurzone-target";
 
-const CONTAINER_BG = 0x1c1c1c;
-const GRID_FILL = 0x383838;
-const GRID_LINES = 0x384438;
-const FARBE_DER_DRINGLICHKEIT = 0xff0000;
-const COOLNESS = 0x598bd4;
+const CONTAINER_BG: number = 0x1c1c1c;
+const GRID_FILL: number = 0x383838;
+const GRID_LINES: number = 0x384438;
+const FARBE_DER_DRINGLICHKEIT: number = 0xff0000;
+const COOLNESS: number = 0x598bd4;
 
 const INITIAL_INSTRUCTIONS: string = `
 You have arrived at your assignment: a planet held captive by the evil Exkur
@@ -286,6 +286,10 @@ class MainGame extends ExcurzoneMain {
             const base: SignificantLocation = this.gameModel.getBase(i);
             this.baseChoices[i].setText(this.createBaseDisplayText(baseDistances, i));
             this.baseChoices[i].setFontStyle(this.gameModel.getBase(i).getIsRevealed() ? "bold" : "");
+            if (this.gameModel.getBase(i).getIsRevealed()){
+                console.log(COOLNESS.toString(16));
+                this.baseChoices[i].setColor("#" + COOLNESS.toString(16));
+            }
         }
     }
 
