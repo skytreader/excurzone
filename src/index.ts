@@ -21,7 +21,8 @@ CLICK TO START MISSION
 `
 
 const BASES_INSTRUCTIONS: string = `
-These are the bases that our probe discovered. Which would you like to attack?
+These are the bases that our probe discovered with probable distances from
+current location. Which would you like to attack?
 `
 
 function gid(id: string): HTMLElement | null {
@@ -238,6 +239,7 @@ class MainGame extends ExcurzoneMain {
     // @ts-ignore FIXME initialization
     private baseChoices: Phaser.GameObjects.Text[] = [];
     private probeInTransit: boolean = false;
+    private currentKnownDistances: number[] = [];
 
     // Hack because I can't get the timer to stay still in the intro
     private timeOffset: number = 0;
@@ -268,6 +270,18 @@ class MainGame extends ExcurzoneMain {
 
     private createBaseDisplayText(baseDistances: number[], baseIndex: number): string {
         return "ABCDEFGHIJ".charAt(baseIndex) + ": " + baseDistances[baseIndex].toFixed(3) + "km";
+    }
+
+    private updateDistanceListing(): void {
+        const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
+        for (var i = 0; i < this.gameModel.getBaseCount(); i++) {
+            const base: SignificantLocation = this.gameModel.getBase(i);
+            this.baseChoices[i].setText((
+                this.createBaseDisplayText(baseDistances, i) +
+                (this.gameModel.getBase(i).getIsRevealed() ? " [REACHED]" : "")
+            ));
+            this.baseChoices[i].setFontStyle(this.gameModel.getBase(i).getIsRevealed() ? "bold" : "");
+        }
     }
 
     protected writeText(): void {
@@ -327,8 +341,8 @@ class MainGame extends ExcurzoneMain {
             this.gameModel.setCurrentPlayerLocation(base);
             this.updatePlayerKurzor();
             this.probeInTransit = false;
-            this.baseChoices[i].setText(this.baseChoices[i].text +((this.currentDestination == i) ? " [REACHED]" : ""));
-            this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
+            this.gameModel.getBase(i).setIsRevealed(true);
+            this.updateDistanceListing();
         }
     }
 
