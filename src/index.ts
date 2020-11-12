@@ -343,6 +343,10 @@ class MainGame extends ExcurzoneMain {
             const baseCartesian: number[] = this.coordsToGameCartesian(base);
             this.addBaseMarker(baseCartesian);
             this.gameModel.setCurrentPlayerLocation(base);
+            if (this.gameModel.getBase(i).getCorrectsRadar()){
+                // Once radar is fixed, it can't break again.
+                this.gameModel.setIsRadarFixed(true);
+            }
             this.updatePlayerKurzor();
             this.probeInTransit = false;
             this.gameModel.getBase(i).setIsRevealed(true);
@@ -379,12 +383,15 @@ class MainGame extends ExcurzoneMain {
                 "RADAR: " + (this.gameModel.getIsRadarFixed() ? "FIXED" : "UNRELIABLE"),
                 {
                     fontSize: 21,
-                    color: this.gameModel.getIsRadarFixed() ? COOLNESS : "#f00",
+                    color: "#f00",
                     fontStyle: "bold"
                 }
             );
         } else {
             this.radarStatus.setText("RADAR: " + (this.gameModel.getIsRadarFixed() ? "FIXED" : "UNRELIABLE"));
+            if (this.gameModel.getIsRadarFixed()){
+                this.radarStatus.setColor("#" + COOLNESS.toString(16));
+            }
         }
     }
 
