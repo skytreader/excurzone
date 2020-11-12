@@ -268,23 +268,23 @@ class MainGame extends ExcurzoneMain {
         return this.time.now - this.timeOffset;
     }
 
-    private createBaseDisplayText(baseDistances: number[], baseIndex: number): string {
+    private createBaseDisplayText(baseIndex: number): string {
         if (this.gameModel.getCurrentPlayerLocation().isEqualTo(this.gameModel.getBase(baseIndex).getLocation())) {
             return "ABCDEFGHIJ".charAt(baseIndex) + ": CURRENT LOCATION";
         } else {
             return (
                 "ABCDEFGHIJ".charAt(baseIndex) + ": " +
-                baseDistances[baseIndex].toFixed(3) + "km" +
+                this.currentKnownDistances[baseIndex].toFixed(3) + "km" +
                 (this.gameModel.getBase(baseIndex).getIsRevealed() ? " [REACHED]" : "")
             );
         }
     }
 
     private updateDistanceListing(): void {
-        const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
+        this.currentKnownDistances = this.gameModel.computeDistanceFromBases();
         for (var i = 0; i < this.gameModel.getBaseCount(); i++) {
             const base: SignificantLocation = this.gameModel.getBase(i);
-            this.baseChoices[i].setText(this.createBaseDisplayText(baseDistances, i));
+            this.baseChoices[i].setText(this.createBaseDisplayText(i));
             this.baseChoices[i].setFontStyle(this.gameModel.getBase(i).getIsRevealed() ? "bold" : "");
             if (this.gameModel.getBase(i).getIsRevealed()){
                 console.log(COOLNESS.toString(16));
@@ -301,19 +301,14 @@ class MainGame extends ExcurzoneMain {
             BASES_INSTRUCTIONS
         );
         let runningHeight = instructions.height + 108;
-        const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
+        this.currentKnownDistances = this.gameModel.computeDistanceFromBases();
         for (var i = 0; i < this.gameModel.getBaseCount(); i++) {
             const base: SignificantLocation = this.gameModel.getBase(i);
             this.baseChoices[i] = this.add.text(
                 xAlign,
                 runningHeight + 13,
-                this.createBaseDisplayText(baseDistances, i),
-                {
-                    fontSize: 20,
-                    // FIXME No need to already decide here
-                    color: this.gameModel.getBase(i).getIsRevealed() ? COOLNESS : "#fff",
-                    fontStyle: (this.currentDestination == i) ? "bold" : ""
-                }
+                this.createBaseDisplayText(i),
+                {fontSize: 20}
             );
             this.baseChoices[i].setInteractive(new Phaser.Geom.Rectangle(
                 0, 0, this.baseChoices[i].width, this.baseChoices[i].height,
@@ -325,7 +320,7 @@ class MainGame extends ExcurzoneMain {
                 this.currentDestination = index;
                 this.probeInTransit = true;
                 this.time.delayedCall(
-                    Math.floor(baseDistances[index]), () => {this.setPlayerLoc(index)}, [], this
+                    Math.floor(this.currentKnownDistances[index]), () => {this.setPlayerLoc(index)}, [], this
                 );
             });
             runningHeight += this.baseChoices[i].height;
