@@ -214,7 +214,7 @@ export class ExcurzoneGame {
         return this.bases.length;
     }
 
-    public isGameEnd(): boolean {
+    public hasPlayerWon(): boolean {
         let allBasesRevealed: boolean = true;
         for (var i = 0; i < this.bases.length; i++){
             if (!this.bases[i].getIsRevealed()){

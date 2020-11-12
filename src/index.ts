@@ -350,6 +350,10 @@ class MainGame extends ExcurzoneMain {
             this.updatePlayerKurzor();
             this.probeInTransit = false;
             this.gameModel.getBase(i).setIsRevealed(true);
+
+            if (this.gameModel.hasPlayerWon()) {
+                this.setGameOver();
+            } 
             this.updateDistanceListing();
         }
     }
@@ -425,15 +429,16 @@ class MainGame extends ExcurzoneMain {
     }
 
     private counterDefenseCheck(): void {
-        const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
-        this.lastCounterdefenseCheck = this.getTimeInScene();
+        if (!this.gameModel.hasPlayerWon()){
+            const cdfCheck = this.counterdefense.hasCaught(this.getTimeInScene());
+            this.lastCounterdefenseCheck = this.getTimeInScene();
 
-        if (cdfCheck){
-            // GAME OVER
-            this.setGameOver();
-            console.log("GAME OVER!");
-        } else {
-            this.flashWarning();
+            if (cdfCheck){
+                // GAME OVER
+                this.setGameOver();
+            } else {
+                this.flashWarning();
+            }
         }
     }
     
@@ -449,20 +454,40 @@ class MainGame extends ExcurzoneMain {
         }
     }
 
+    /**
+    Assuming end game state has been reached, proclaim in the UI the appropriate
+    end game check.
+
+    WARNING: The defeat end game state has no corresponding state in the model
+    so calling this will display the defeat end game state without checks.
+    */
     private setGameOver(): void {
-        const warnText = this.add.text(
-            this.cameras.main.centerX,
-            this.cameras.main.displayHeight * 0.9,
-            "THE EXKURS CAUGHT OUR PROBE",
-            {
-                fontSize: 36,
-                color: "#f00",
-                fontStyle: "bold"
-            }
-        );
-        this.isPlayerDead = true;
-        // Just for the color change.
-        this.updatePlayerKurzor();
+        if (this.gameModel.hasPlayerWon()){
+            this.add.text(
+                this.cameras.main.centerX,
+                this.cameras.main.displayHeight * 0.9,
+                "MISSION ACCOMPLISHED",
+                {
+                    fontSize: 36,
+                    color: `#${COOLNESS.toString(16)}`,
+                    fontStyle: "bold"
+                }
+            );
+        } else {
+            const warnText = this.add.text(
+                this.cameras.main.centerX,
+                this.cameras.main.displayHeight * 0.9,
+                "THE EXKURS CAUGHT OUR PROBE",
+                {
+                    fontSize: 36,
+                    color: "#f00",
+                    fontStyle: "bold"
+                }
+            );
+            this.isPlayerDead = true;
+            // Just for the color change.
+            this.updatePlayerKurzor();
+        }
     }
 
     private flashWarning(): void {
