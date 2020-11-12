@@ -202,6 +202,10 @@ export class ExcurzoneGame {
         return this.isRadarFixed;
     }
 
+    public setIsRadarFixed(flag: boolean) {
+        this.isRadarFixed = flag;
+    }
+
     public getBase(index: number): SignificantLocation {
         return this.bases[index];
     }

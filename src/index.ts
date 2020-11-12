@@ -2,13 +2,13 @@ import Phaser from 'phaser';
 import {Coordinate, SignificantLocation, SignificantLocationGenerator, ExcurzoneGame} from './model';
 import {ExkurCounterdefense, LinearExkurCounterdefense} from './livemodels';
 
-const PARENT_ID = "excurzone-target";
+const PARENT_ID: string = "excurzone-target";
 
-const CONTAINER_BG = 0x1c1c1c;
-const GRID_FILL = 0x383838;
-const GRID_LINES = 0x384438;
-const FARBE_DER_DRINGLICHKEIT = 0xff0000;
-const COOLNESS = 0x598bd4;
+const CONTAINER_BG: number = 0x1c1c1c;
+const GRID_FILL: number = 0x383838;
+const GRID_LINES: number = 0x384438;
+const FARBE_DER_DRINGLICHKEIT: number = 0xff0000;
+const COOLNESS: number = 0x598bd4;
 
 const INITIAL_INSTRUCTIONS: string = `
 You have arrived at your assignment: a planet held captive by the evil Exkur
@@ -21,7 +21,8 @@ CLICK TO START MISSION
 `
 
 const BASES_INSTRUCTIONS: string = `
-These are the bases that our probe discovered. Which would you like to attack?
+These are the bases that our probe discovered with probable distances from
+current location. Which would you like to attack?
 `
 
 function gid(id: string): HTMLElement | null {
@@ -238,6 +239,7 @@ class MainGame extends ExcurzoneMain {
     // @ts-ignore FIXME initialization
     private baseChoices: Phaser.GameObjects.Text[] = [];
     private probeInTransit: boolean = false;
+    private currentKnownDistances: number[] = [];
 
     // Hack because I can't get the timer to stay still in the intro
     private timeOffset: number = 0;
@@ -266,8 +268,29 @@ class MainGame extends ExcurzoneMain {
         return this.time.now - this.timeOffset;
     }
 
-    private createBaseDisplayText(baseDistances: number[], baseIndex: number): string {
-        return "ABCDEFGHIJ".charAt(baseIndex) + ": " + baseDistances[baseIndex].toFixed(3) + "km";
+    private createBaseDisplayText(baseIndex: number): string {
+        if (this.gameModel.getCurrentPlayerLocation().isEqualTo(this.gameModel.getBase(baseIndex).getLocation())) {
+            return "ABCDEFGHIJ".charAt(baseIndex) + ": CURRENT LOCATION";
+        } else {
+            return (
+                "ABCDEFGHIJ".charAt(baseIndex) + ": " +
+                this.currentKnownDistances[baseIndex].toFixed(3) + "km" +
+                (this.gameModel.getBase(baseIndex).getIsRevealed() ? " [REACHED]" : "")
+            );
+        }
+    }
+
+    private updateDistanceListing(): void {
+        this.currentKnownDistances = this.gameModel.computeDistanceFromBases();
+        for (var i = 0; i < this.gameModel.getBaseCount(); i++) {
+            const base: SignificantLocation = this.gameModel.getBase(i);
+            this.baseChoices[i].setText(this.createBaseDisplayText(i));
+            this.baseChoices[i].setFontStyle(this.gameModel.getBase(i).getIsRevealed() ? "bold" : "");
+            if (this.gameModel.getBase(i).getIsRevealed()){
+                console.log(COOLNESS.toString(16));
+                this.baseChoices[i].setColor("#" + COOLNESS.toString(16));
+            }
+        }
     }
 
     protected writeText(): void {
@@ -278,19 +301,14 @@ class MainGame extends ExcurzoneMain {
             BASES_INSTRUCTIONS
         );
         let runningHeight = instructions.height + 108;
-        const baseDistances: number[] = this.gameModel.computeDistanceFromBases();
+        this.currentKnownDistances = this.gameModel.computeDistanceFromBases();
         for (var i = 0; i < this.gameModel.getBaseCount(); i++) {
             const base: SignificantLocation = this.gameModel.getBase(i);
             this.baseChoices[i] = this.add.text(
                 xAlign,
                 runningHeight + 13,
-                this.createBaseDisplayText(baseDistances, i),
-                {
-                    fontSize: 20,
-                    // FIXME No need to already decide here
-                    color: this.gameModel.getBase(i).getIsRevealed() ? COOLNESS : "#fff",
-                    fontStyle: (this.currentDestination == i) ? "bold" : ""
-                }
+                this.createBaseDisplayText(i),
+                {fontSize: 20}
             );
             this.baseChoices[i].setInteractive(new Phaser.Geom.Rectangle(
                 0, 0, this.baseChoices[i].width, this.baseChoices[i].height,
@@ -302,7 +320,7 @@ class MainGame extends ExcurzoneMain {
                 this.currentDestination = index;
                 this.probeInTransit = true;
                 this.time.delayedCall(
-                    Math.floor(baseDistances[index]), () => {this.setPlayerLoc(index)}, [], this
+                    Math.floor(this.currentKnownDistances[index]), () => {this.setPlayerLoc(index)}, [], this
                 );
             });
             runningHeight += this.baseChoices[i].height;
@@ -325,10 +343,14 @@ class MainGame extends ExcurzoneMain {
             const baseCartesian: number[] = this.coordsToGameCartesian(base);
             this.addBaseMarker(baseCartesian);
             this.gameModel.setCurrentPlayerLocation(base);
+            if (this.gameModel.getBase(i).getCorrectsRadar()){
+                // Once radar is fixed, it can't break again.
+                this.gameModel.setIsRadarFixed(true);
+            }
             this.updatePlayerKurzor();
             this.probeInTransit = false;
-            this.baseChoices[i].setText(this.baseChoices[i].text +((this.currentDestination == i) ? " [REACHED]" : ""));
-            this.baseChoices[i].setFontStyle((this.currentDestination == i) ? "bold" : "");
+            this.gameModel.getBase(i).setIsRevealed(true);
+            this.updateDistanceListing();
         }
     }
 
@@ -361,12 +383,15 @@ class MainGame extends ExcurzoneMain {
                 "RADAR: " + (this.gameModel.getIsRadarFixed() ? "FIXED" : "UNRELIABLE"),
                 {
                     fontSize: 21,
-                    color: this.gameModel.getIsRadarFixed() ? COOLNESS : "#f00",
+                    color: "#f00",
                     fontStyle: "bold"
                 }
             );
         } else {
             this.radarStatus.setText("RADAR: " + (this.gameModel.getIsRadarFixed() ? "FIXED" : "UNRELIABLE"));
+            if (this.gameModel.getIsRadarFixed()){
+                this.radarStatus.setColor("#" + COOLNESS.toString(16));
+            }
         }
     }
 
