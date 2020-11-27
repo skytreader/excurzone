@@ -51,7 +51,7 @@ function configMaker(customKeys: {[index: string]: any} ): Phaser.Types.Core.Gam
     return config;
 }
 
-// TODO Feel like these are the same. If the interface is visible then it it
+// TODO Feel like these are the same. If the interface is visible then it is
 // clickable. Kein Unterschied!
 class GameUIState {
     constructor(
